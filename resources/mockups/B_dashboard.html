@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Minbar · Mockup B — iOS 17 Today</title>
+<style>
+  :root {
+    --bg:        #f2f2f7;
+    --bg-elev:   #ffffff;
+    --label:     #000000;
+    --label-2:   #3c3c43;
+    --label-3:   rgba(60,60,67,0.6);
+    --label-4:   rgba(60,60,67,0.3);
+    --sep:       rgba(60,60,67,0.10);
+    --hairline:  rgba(0,0,0,0.06);
+    --fill-1:    rgba(120,120,128,0.08);
+    --fill-2:    rgba(120,120,128,0.16);
+    --blue:      #007AFF;
+    --pink:      #FF2D55;
+    --orange:    #FF9500;
+    --green:     #34C759;
+    --purple:    #AF52DE;
+    --teal:      #5AC8FA;
+    --indigo:    #5856D6;
+    --shadow-card: 0 1px 2px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.04);
+    --r-sm: 10px;
+    --r-md: 14px;
+    --r-lg: 20px;
+    --r-xl: 28px;
+    --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #000000;
+      --bg-elev: #1c1c1e;
+      --label: #ffffff;
+      --label-2: rgba(235,235,245,0.85);
+      --label-3: rgba(235,235,245,0.6);
+      --label-4: rgba(235,235,245,0.3);
+      --sep: rgba(84,84,88,0.65);
+      --hairline: rgba(255,255,255,0.08);
+      --fill-1: rgba(120,120,128,0.24);
+      --fill-2: rgba(120,120,128,0.36);
+      --blue: #0A84FF;
+      --shadow-card: 0 1px 2px rgba(0,0,0,0.3), 0 4px 12px rgba(0,0,0,0.3);
+    }
+  }
+
+  *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "PingFang SC", sans-serif;
+    background: var(--bg);
+    color: var(--label);
+    font-size: 15px;
+    line-height: 1.4;
+    -webkit-font-smoothing: antialiased;
+    -webkit-user-select: none;
+    min-height: 100vh;
+  }
+
+  /* ─── Top Tab Bar (segmented control style) ─── */
+  .topbar {
+    position: sticky; top: 0; z-index: 50;
+    backdrop-filter: blur(40px) saturate(180%);
+    -webkit-backdrop-filter: blur(40px) saturate(180%);
+    background: rgba(242,242,247,0.78);
+    border-bottom: 0.5px solid var(--sep);
+    padding: 12px 24px;
+  }
+  @media (prefers-color-scheme: dark) {
+    .topbar { background: rgba(0,0,0,0.78); }
+  }
+  .topbar-row {
+    max-width: 720px; margin: 0 auto;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .brand {
+    font-size: 17px; font-weight: 700; letter-spacing: -0.4px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .seg {
+    display: flex;
+    background: var(--fill-1);
+    border-radius: 9px;
+    padding: 2px;
+  }
+  .seg-item {
+    padding: 6px 16px;
+    border-radius: 7px;
+    font-size: 13px; font-weight: 500;
+    color: var(--label-2);
+    cursor: pointer;
+    transition: all 0.18s var(--ease-spring);
+  }
+  .seg-item.active {
+    background: var(--bg-elev);
+    color: var(--label);
+    box-shadow: 0 0.5px 1px rgba(0,0,0,0.08), 0 1.5px 3px rgba(0,0,0,0.06);
+    font-weight: 600;
+  }
+
+  /* ─── Container ─── */
+  .container { max-width: 720px; margin: 0 auto; padding: 24px 20px 60px; }
+  .page { display: none; }
+  .page.active { display: block; animation: fade 0.3s var(--ease-spring); }
+  @keyframes fade { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+
+  /* ─── iOS Group Header ─── */
+  .group-header {
+    padding: 24px 16px 8px;
+    font-size: 13px; font-weight: 400;
+    color: var(--label-3);
+    text-transform: uppercase;
+    letter-spacing: -0.2px;
+  }
+
+  /* ─── iOS Today Widget ─── */
+  .widgets-stack {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 8px;
+  }
+  .widget {
+    border-radius: var(--r-xl);
+    padding: 18px;
+    box-shadow: var(--shadow-card);
+    position: relative;
+    overflow: hidden;
+    aspect-ratio: 1.5;
+    display: flex; flex-direction: column; justify-content: space-between;
+  }
+  /* Time widget — light gradient */
+  .w-time {
+    background: linear-gradient(135deg, #1c1c1e 0%, #3a3a3c 100%);
+    color: white;
+  }
+  .w-time::after {
+    content: ""; position: absolute; top: -50%; right: -30%;
+    width: 100%; height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .w-time-greet { font-size: 12px; font-weight: 500; opacity: 0.7; }
+  .w-time-clock { font-size: 48px; font-weight: 200; letter-spacing: -2px; line-height: 1; font-feature-settings: "tnum"; }
+  .w-time-date { font-size: 12px; opacity: 0.7; }
+
+  /* Weather widget — orange/sky gradient */
+  .w-weather {
+    background: linear-gradient(135deg, #FFB347 0%, #FF6B6B 50%, #4A90E2 100%);
+    color: white;
+  }
+  .w-weather::before {
+    content: ""; position: absolute; top: -20px; right: -30px;
+    width: 120px; height: 120px;
+    background: radial-gradient(circle, rgba(255,255,255,0.5) 0%, transparent 60%);
+  }
+  .w-weather-loc { font-size: 12px; font-weight: 600; }
+  .w-weather-bottom { display: flex; justify-content: space-between; align-items: flex-end; }
+  .w-weather-temp { font-size: 44px; font-weight: 300; line-height: 1; letter-spacing: -1.5px; }
+  .w-weather-icon { font-size: 38px; line-height: 1; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15)); }
+  .w-weather-cond { font-size: 12px; opacity: 0.9; margin-top: 2px; }
+
+  /* ─── Search ─── */
+  .search-bar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 14px;
+    background: var(--fill-1);
+    border-radius: 12px;
+    margin: 16px 0 8px;
+  }
+  .search-icon { color: var(--label-3); font-size: 14px; }
+  .search-input {
+    flex: 1; border: none; outline: none;
+    background: transparent; color: inherit;
+    font-size: 16px; font-family: inherit;
+  }
+  .search-input::placeholder { color: var(--label-3); }
+
+  /* ─── Inset Grouped List (iOS) ─── */
+  .grouped {
+    background: var(--bg-elev);
+    border-radius: var(--r-md);
+    overflow: hidden;
+    margin: 0 0 8px;
+  }
+
+  /* Sites grid inside group */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    padding: 8px;
+  }
+  .grid-cell {
+    padding: 12px 4px;
+    text-align: center;
+    cursor: pointer;
+    border-radius: 12px;
+    transition: background 0.15s var(--ease-spring);
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+  }
+  .grid-cell:hover { background: var(--fill-1); }
+  .grid-cell:active { transform: scale(0.95); }
+  .cell-logo {
+    width: 48px; height: 48px;
+    border-radius: 11px;
+    background: var(--fill-1);
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+    box-shadow: inset 0 0 0 0.5px rgba(0,0,0,0.04);
+  }
+  .cell-logo img { width: 28px; height: 28px; object-fit: contain; }
+  .cell-name { font-size: 11px; font-weight: 500; color: var(--label-2); }
+
+  /* ─── History List ─── */
+  .row {
+    display: grid;
+    grid-template-columns: 32px 1fr auto;
+    align-items: center; gap: 14px;
+    padding: 10px 16px;
+    cursor: pointer;
+    border-bottom: 0.5px solid var(--sep);
+  }
+  .row:last-child { border-bottom: 0; }
+  .row:hover { background: var(--fill-1); }
+  .row-logo { width: 28px; height: 28px; border-radius: 6px; background: var(--fill-1); display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  .row-logo img { width: 18px; height: 18px; }
+  .row-info-title { font-size: 14px; font-weight: 500; }
+  .row-info-url { font-size: 12px; color: var(--label-3); margin-top: 1px; font-family: ui-monospace, monospace; }
+  .row-time { font-size: 12px; color: var(--label-3); }
+
+  /* ─── About cells ─── */
+  .cell-row {
+    display: grid;
+    grid-template-columns: 32px 1fr;
+    align-items: flex-start; gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 0.5px solid var(--sep);
+  }
+  .cell-row:last-child { border-bottom: 0; }
+  .cell-icon {
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    background: linear-gradient(135deg, var(--blue), var(--teal));
+    color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+  }
+  .cell-icon.purple { background: linear-gradient(135deg, var(--purple), var(--pink)); }
+  .cell-icon.orange { background: linear-gradient(135deg, var(--orange), var(--pink)); }
+  .cell-icon.green { background: linear-gradient(135deg, var(--green), var(--teal)); }
+  .cell-icon.gray { background: linear-gradient(135deg, #8E8E93, #636366); }
+  .cell-content-title { font-size: 14px; font-weight: 600; }
+  .cell-content-text { font-size: 13px; color: var(--label-2); margin-top: 2px; line-height: 1.5; }
+  .kbd {
+    display: inline-block; padding: 1px 7px;
+    background: var(--fill-2); border-radius: 5px;
+    font-family: ui-monospace, "SF Mono", monospace;
+    font-size: 11px; margin: 0 1px;
+  }
+
+  /* Hero greeting */
+  .hero-h { font-size: 32px; font-weight: 700; letter-spacing: -0.8px; padding: 8px 4px 4px; }
+  .hero-sub { font-size: 14px; color: var(--label-3); padding: 0 4px 12px; }
+
+  /* Stats row */
+  .stat-row {
+    display: flex; align-items: center; gap: 16px;
+    padding: 14px 16px;
+    background: var(--bg-elev);
+    border-radius: var(--r-md);
+    margin-bottom: 8px;
+  }
+  .stat-num { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; line-height: 1; }
+  .stat-label { font-size: 12px; color: var(--label-3); margin-top: 2px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-row">
+    <div class="brand">🐟 Minbar</div>
+    <div class="seg">
+      <div class="seg-item active" onclick="go(this,'home')">首页</div>
+      <div class="seg-item" onclick="go(this,'history')">历史</div>
+      <div class="seg-item" onclick="go(this,'about')">关于</div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- 首页 -->
+  <div class="page active" id="home">
+    <div class="hero-h">Hi, 摸鱼时间到</div>
+    <div class="hero-sub">v1.3.0 · 数据本地存储 · 自动 7 天清理</div>
+
+    <div class="widgets-stack">
+      <div class="widget w-time">
+        <div class="w-time-greet">PM · 下午好</div>
+        <div>
+          <div class="w-time-clock" id="clock">14:32</div>
+          <div class="w-time-date">2026.04.27 · 周一</div>
+        </div>
+      </div>
+      <div class="widget w-weather">
+        <div class="w-weather-loc">📍 深圳</div>
+        <div class="w-weather-bottom">
+          <div>
+            <div class="w-weather-temp">22°</div>
+            <div class="w-weather-cond">晴 · 微风</div>
+          </div>
+          <div class="w-weather-icon">☀️</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="search-bar">
+      <span class="search-icon">🔍</span>
+      <input class="search-input" placeholder="搜索网址或关键词">
+    </div>
+
+    <div class="group-header">娱乐</div>
+    <div class="grouped">
+      <div class="grid">
+        <div class="grid-cell"><div class="cell-logo"><img src="https://cdn.simpleicons.org/bilibili/00A1D6"></div><div class="cell-name">哔哩哔哩</div></div>
+        <div class="grid-cell"><div class="cell-logo"><img src="https://cdn.simpleicons.org/youtube/FF0000"></div><div class="cell-name">YouTube</div></div>
+        <div class="grid-cell"><div class="cell-logo"><img src="https://cdn.simpleicons.org/tiktok/000000"></div><div class="cell-name">抖音</div></div>
+        <div class="grid-cell"><div class="cell-logo"><img src="https://icons.duckduckgo.com/ip3/xiaohongshu.com.ico"></div><div class="cell-name">小红书</div></div>
+        <div class="grid-cell"><div class="cell-logo"><img src="https://cdn.simpleicons.org/sinaweibo/E6162D"></div><div class="cell-name">微博</div></div>
+        <div class="grid-cell"><div class="cell-logo"><img src="https://cdn.simpleicons.org/x/000000"></div><div class="cell-name">X</div></div>
+        <div class="grid-cell"><div class="cell-logo"><img src="https://cdn.simpleicons.org/instagram/E4405F"></div><div class="cell-name">Instagram</div></div>
+        <div class="grid-cell"><div class="cell-logo"><img src="https://cdn.simpleicons.org/netflix/E50914"></div><div class="cell-name">Netflix</div></div>
+        <div class="grid-cell"><div class="cell-logo"><img src="https://cdn.simpleicons.org/reddit/FF4500"></div><div class="cell-name">Reddit</div></div>
+        <div class="grid-cell"><div class="cell-logo"><img src="https://cdn.simpleicons.org/tiktok/25F4EE"></div><div class="cell-name">TikTok</div></div>
+        <div class="grid-cell"><div class="cell-logo"><img src="https://cdn.simpleicons.org/spotify/1DB954"></div><div class="cell-name">Spotify</div></div>
+        <div class="grid-cell"><div class="cell-logo"><img src="https://icons.duckduckgo.com/ip3/iqiyi.com.ico"></div><div class="cell-name">爱奇艺</div></div>
+      </div>
+    </div>
+
+    <div class="group-header">技术</div>
+    <div class="grouped">
+      <div class="grid">
+        <div class="grid-cell"><div class="cell-logo"><img src="https://cdn.simpleicons.org/github/181717"></div><div class="cell-name">GitHub</div></div>
+        <div class="grid-cell"><div class="cell-logo"><img src="https://cdn.simpleicons.org/stackoverflow/F58025"></div><div class="cell-name">StackOverflow</div></div>
+        <div class="grid-cell"><div class="cell-logo"><img src="https://icons.duckduckgo.com/ip3/juejin.cn.ico"></div><div class="cell-name">掘金</div></div>
+        <div class="grid-cell"><div class="cell-logo"><img src="https://icons.duckduckgo.com/ip3/v2ex.com.ico"></div><div class="cell-name">V2EX</div></div>
+        <div class="grid-cell"><div class="cell-logo"><img src="https://cdn.simpleicons.org/ycombinator/FF6600"></div><div class="cell-name">HackerNews</div></div>
+        <div class="grid-cell"><div class="cell-logo"><img src="https://cdn.simpleicons.org/zhihu/0084FF"></div><div class="cell-name">知乎</div></div>
+        <div class="grid-cell"><div class="cell-logo"><img src="https://cdn.simpleicons.org/leetcode/FFA116"></div><div class="cell-name">LeetCode</div></div>
+        <div class="grid-cell"><div class="cell-logo"><img src="https://cdn.simpleicons.org/openai/412991"></div><div class="cell-name">ChatGPT</div></div>
+      </div>
+    </div>
+
+    <div class="group-header">炒币</div>
+    <div class="grouped">
+      <div class="grid">
+        <div class="grid-cell"><div class="cell-logo"><img src="https://cdn.simpleicons.org/binance/F0B90B"></div><div class="cell-name">币安</div></div>
+        <div class="grid-cell"><div class="cell-logo"><img src="https://icons.duckduckgo.com/ip3/okx.com.ico"></div><div class="cell-name">OKX</div></div>
+        <div class="grid-cell"><div class="cell-logo"><img src="https://cdn.simpleicons.org/coinmarketcap/17181B"></div><div class="cell-name">CMC</div></div>
+        <div class="grid-cell"><div class="cell-logo"><img src="https://cdn.simpleicons.org/tradingview/2962FF"></div><div class="cell-name">TradingView</div></div>
+        <div class="grid-cell"><div class="cell-logo"><img src="https://cdn.simpleicons.org/coingecko/8DC647"></div><div class="cell-name">CoinGecko</div></div>
+        <div class="grid-cell"><div class="cell-logo"><img src="https://cdn.simpleicons.org/defipulse/E80C5B"></div><div class="cell-name">DeFiLlama</div></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 历史 -->
+  <div class="page" id="history">
+    <div class="hero-h">浏览历史</div>
+    <div class="hero-sub">最近 7 天 · 自动清理 · 数据本地</div>
+
+    <div class="stat-row">
+      <div><div class="stat-num">47</div><div class="stat-label">本周访问</div></div>
+      <div><div class="stat-num">12</div><div class="stat-label">独立站点</div></div>
+      <div><div class="stat-num">3.2h</div><div class="stat-label">本周时长</div></div>
+    </div>
+
+    <div class="group-header">今天</div>
+    <div class="grouped">
+      <div class="row"><div class="row-logo"><img src="https://cdn.simpleicons.org/github/181717"></div><div><div class="row-info-title">GitHub - Build Software</div><div class="row-info-url">github.com</div></div><div class="row-time">2 分钟前</div></div>
+      <div class="row"><div class="row-logo"><img src="https://cdn.simpleicons.org/bilibili/00A1D6"></div><div><div class="row-info-title">哔哩哔哩</div><div class="row-info-url">m.bilibili.com</div></div><div class="row-time">15 分钟前</div></div>
+      <div class="row"><div class="row-logo"><img src="https://cdn.simpleicons.org/openai/412991"></div><div><div class="row-info-title">ChatGPT</div><div class="row-info-url">chat.openai.com</div></div><div class="row-time">1 小时前</div></div>
+    </div>
+
+    <div class="group-header">昨天</div>
+    <div class="grouped">
+      <div class="row"><div class="row-logo"><img src="https://icons.duckduckgo.com/ip3/xiaohongshu.com.ico"></div><div><div class="row-info-title">小红书</div><div class="row-info-url">xiaohongshu.com</div></div><div class="row-time">18:24</div></div>
+      <div class="row"><div class="row-logo"><img src="https://cdn.simpleicons.org/coinmarketcap/17181B"></div><div><div class="row-info-title">CoinMarketCap</div><div class="row-info-url">coinmarketcap.com</div></div><div class="row-time">14:01</div></div>
+    </div>
+
+    <div class="group-header">2 天前</div>
+    <div class="grouped">
+      <div class="row"><div class="row-logo"><img src="https://icons.duckduckgo.com/ip3/36kr.com.ico"></div><div><div class="row-info-title">36Kr - 让一部分人先看到未来</div><div class="row-info-url">36kr.com</div></div><div class="row-time">10:14</div></div>
+      <div class="row"><div class="row-logo"><img src="https://cdn.simpleicons.org/x/000000"></div><div><div class="row-info-title">X / Twitter</div><div class="row-info-url">x.com</div></div><div class="row-time">09:33</div></div>
+    </div>
+  </div>
+
+  <!-- 关于 -->
+  <div class="page" id="about">
+    <div class="hero-h">🐟 Minbar</div>
+    <div class="hero-sub">摸鱼浏览器 v1.3.0 · 2026.04 · macOS 11+</div>
+
+    <div class="group-header">开发目的</div>
+    <div class="grouped">
+      <div class="cell-row">
+        <div class="cell-icon">🎯</div>
+        <div>
+          <div class="cell-content-title">为什么做 Minbar</div>
+          <div class="cell-content-text">工作间隙偷得浮生半日闲。常驻菜单栏的小浮窗，按一下快捷键就能召唤，等比缩小到屏幕角落不影响主屏作业。点其他窗口自动缩回，随时回归"忙碌中"。</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="group-header">快捷键</div>
+    <div class="grouped">
+      <div class="cell-row">
+        <div class="cell-icon purple">⌘</div>
+        <div>
+          <div class="cell-content-title">显示 / 隐藏窗口</div>
+          <div class="cell-content-text"><span class="kbd">⌥</span><span class="kbd">~</span> 全局唤起</div>
+        </div>
+      </div>
+      <div class="cell-row">
+        <div class="cell-icon orange">⌥</div>
+        <div>
+          <div class="cell-content-title">退出 App</div>
+          <div class="cell-content-text"><span class="kbd">⌘</span><span class="kbd">⌥</span><span class="kbd">Q</span></div>
+        </div>
+      </div>
+      <div class="cell-row">
+        <div class="cell-icon green">L</div>
+        <div>
+          <div class="cell-content-title">聚焦地址栏</div>
+          <div class="cell-content-text"><span class="kbd">⌘</span><span class="kbd">L</span> · 双击窗口切换大小</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="group-header">数据存储</div>
+    <div class="grouped">
+      <div class="cell-row">
+        <div class="cell-icon gray">📂</div>
+        <div>
+          <div class="cell-content-title">独立目录 · 与其他 App 隔离</div>
+          <div class="cell-content-text">
+            <span class="kbd">~/.minbar/config.json</span> 用户配置<br>
+            <span class="kbd">~/.minbar-data/history.json</span> 浏览历史 (7 天)<br>
+            <span class="kbd">~/.minbar-data/webdata/</span> Cookie / Cache
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="group-header">隐私 & 网络</div>
+    <div class="grouped">
+      <div class="cell-row">
+        <div class="cell-icon">🛡️</div>
+        <div>
+          <div class="cell-content-title">独立 WebKit DataStore</div>
+          <div class="cell-content-text">与系统 Safari 完全隔离的 Cookie 和缓存。支持「无痕模式」一键开关。</div>
+        </div>
+      </div>
+      <div class="cell-row">
+        <div class="cell-icon orange">🌐</div>
+        <div>
+          <div class="cell-content-title">VPN 绕行说明</div>
+          <div class="cell-content-text">App 自身无法绕过系统级 VPN。如需直连，请在 VPN 客户端配置 split-tunneling，将 <span class="kbd">com.minbar.app</span> 列入直连规则。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function go(el, id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.seg-item').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (el) el.classList.add('active');
+}
+function tickClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent =
+    `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+}
+tickClock(); setInterval(tickClock, 30000);
+</script>
+</body>
+</html>

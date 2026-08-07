@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Minbar · 多窗自动摆放</title>
+<style>
+  :root {
+    --label:    #1d1d1f;
+    --label-2:  #424245;
+    --label-3:  #6e6e73;
+    --label-4:  #86868b;
+    --bg:       #f5f5f7;
+    --bg-elev:  #ffffff;
+    --bg-sec:   #fafafa;
+    --sep:      rgba(0,0,0,0.06);
+    --hairline: rgba(0,0,0,0.08);
+    --fill-1:   rgba(0,0,0,0.04);
+    --fill-2:   rgba(0,0,0,0.08);
+    --blue:     #0071e3;
+    --blue-bg:  rgba(0,113,227,0.10);
+    --green:    #34c759;
+    --orange:   #ff9500;
+    --red:      #ff3b30;
+    --purple:   #af52de;
+    --pink:     #ff2d55;
+    --shadow-sm: 0 0.5px 1px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 0.5px 1px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.06);
+    --shadow-lg: 0 0.5px 1px rgba(0,0,0,0.08), 0 12px 32px rgba(0,0,0,0.10);
+    --shadow-xl: 0 0.5px 1px rgba(0,0,0,0.12), 0 24px 64px rgba(0,0,0,0.18);
+    --r-sm: 6px;
+    --r-md: 10px;
+    --r-lg: 14px;
+    --r-xl: 20px;
+    --ease: cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --label: #f5f5f7;
+      --label-2: #d1d1d6;
+      --label-3: #98989d;
+      --label-4: #636366;
+      --bg: #161618;
+      --bg-elev: #1f1f22;
+      --bg-sec: #1c1c1e;
+      --sep: rgba(255,255,255,0.06);
+      --hairline: rgba(255,255,255,0.10);
+      --fill-1: rgba(255,255,255,0.06);
+      --fill-2: rgba(255,255,255,0.10);
+      --blue: #0a84ff;
+      --shadow-md: 0 0.5px 1px rgba(0,0,0,0.5), 0 4px 12px rgba(0,0,0,0.4);
+      --shadow-xl: 0 0.5px 1px rgba(0,0,0,0.5), 0 24px 64px rgba(0,0,0,0.5);
+    }
+  }
+
+  *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", sans-serif;
+    color: var(--label);
+    -webkit-font-smoothing: antialiased;
+    -webkit-user-select: none;
+    font-size: 13px;
+    line-height: 1.5;
+    background: var(--bg);
+  }
+
+  /* ─── Section A: 主场景（竖列模式） ─── */
+  .desktop {
+    height: 90vh; min-height: 720px;
+    background: linear-gradient(135deg, #5b8aa8 0%, #8b6daa 50%, #c08988 100%);
+    position: relative;
+    overflow: hidden;
+    border-bottom: 4px solid var(--bg);
+  }
+  @media (prefers-color-scheme: dark) {
+    .desktop {
+      background: linear-gradient(135deg, #1a2238 0%, #2a1845 50%, #3a1f1c 100%);
+    }
+  }
+
+  .menubar {
+    height: 24px;
+    background: rgba(0,0,0,0.55);
+    backdrop-filter: blur(20px);
+    padding: 0 14px;
+    display: flex; align-items: center; gap: 16px;
+    color: white; font-size: 12px;
+  }
+  .menubar-spacer { flex: 1; }
+  .menubar-logo {
+    color: #ffd60a; font-size: 14px; cursor: pointer;
+    position: relative;
+  }
+
+  /* 主屏：模拟 CRM */
+  .crm {
+    position: absolute;
+    top: 60px; left: 270px; right: 40px; bottom: 40px;
+    background: var(--bg-elev);
+    border-radius: var(--r-xl);
+    box-shadow: var(--shadow-xl);
+    overflow: hidden;
+    border: 0.5px solid var(--hairline);
+    padding: 32px;
+    color: var(--label-3);
+    display: flex; flex-direction: column;
+  }
+  .crm-h { font-size: 26px; font-weight: 700; color: var(--label); letter-spacing: -0.5px; }
+  .crm-sub { font-size: 13px; margin-top: 2px; }
+  .crm-blocks {
+    flex: 1; margin-top: 24px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 14px;
+  }
+  .crm-block {
+    background: var(--bg-sec);
+    border-radius: var(--r-md);
+    border: 0.5px solid var(--hairline);
+    padding: 16px;
+  }
+  .crm-block-h { font-size: 11px; font-weight: 600; color: var(--label-3); text-transform: uppercase; letter-spacing: 0.5px; }
+  .crm-block-num { font-size: 32px; font-weight: 700; color: var(--label); margin-top: 6px; letter-spacing: -0.5px; }
+  .crm-block-sub { font-size: 11px; color: var(--label-3); margin-top: 4px; }
+
+  /* ─── 左侧竖列堆叠的小窗 ─── */
+  .vstack {
+    position: absolute;
+    top: 60px; left: 32px;
+    display: flex; flex-direction: column;
+    gap: 8px;
+    z-index: 50;
+  }
+  .mini {
+    width: 220px;
+    background: var(--bg-elev);
+    border-radius: var(--r-md);
+    box-shadow: var(--shadow-lg);
+    border: 0.5px solid var(--hairline);
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.18s var(--ease-spring);
+  }
+  .mini:hover {
+    transform: translateX(2px);
+    box-shadow: var(--shadow-xl);
+  }
+  .mini-tb {
+    height: 24px;
+    background: var(--bg-sec);
+    border-bottom: 0.5px solid var(--sep);
+    padding: 0 10px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .mini-traffic {
+    display: flex; gap: 4px;
+  }
+  .mini-light { width: 9px; height: 9px; border-radius: 50%; }
+  .mini-light.r { background: #ff5f57; }
+  .mini-light.y { background: #febc2e; }
+  .mini-light.g { background: #28c840; }
+  .mini-favicon { width: 12px; height: 12px; border-radius: 2px; margin-left: 4px; }
+  .mini-title {
+    flex: 1; font-size: 11px; color: var(--label-2); font-weight: 500;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .mini-body {
+    height: 70px;
+    background: var(--bg-sec);
+    padding: 8px 10px;
+    font-size: 9px;
+    color: var(--label-2);
+    line-height: 1.4;
+    position: relative;
+    overflow: hidden;
+  }
+  .msg-line { display: flex; gap: 4px; margin-bottom: 3px; }
+  .msg-from { font-weight: 600; flex-shrink: 0; }
+  .unread {
+    position: absolute;
+    top: 4px; right: 6px;
+    min-width: 14px; height: 14px;
+    background: var(--red);
+    color: white;
+    padding: 0 4px;
+    border-radius: 999px;
+    font-size: 8px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 1px 2px rgba(255,59,48,0.4);
+  }
+
+  /* ─── Layout Controller (主控制器) ─── */
+  .ctrl {
+    position: absolute;
+    top: 60px; right: 40px;
+    width: 260px;
+    background: var(--bg-elev);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-xl);
+    border: 0.5px solid var(--hairline);
+    overflow: hidden;
+    z-index: 100;
+  }
+  .ctrl-head {
+    background: var(--bg-sec);
+    border-bottom: 0.5px solid var(--sep);
+    padding: 12px 16px;
+  }
+  .ctrl-title { font-size: 13px; font-weight: 700; }
+  .ctrl-sub { font-size: 11px; color: var(--label-3); margin-top: 2px; }
+  .ctrl-body { padding: 14px; }
+
+  .mode-grp {
+    display: flex; gap: 6px;
+    margin-bottom: 12px;
+  }
+  .mode-btn {
+    flex: 1;
+    aspect-ratio: 1;
+    border-radius: 9px;
+    background: var(--fill-1);
+    border: 1.5px solid transparent;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 4px;
+    font-size: 10px;
+    color: var(--label-2);
+  }
+  .mode-btn:hover { background: var(--fill-2); }
+  .mode-btn.active {
+    background: var(--blue-bg);
+    border-color: var(--blue);
+    color: var(--blue);
+    font-weight: 600;
+  }
+  .mode-icon {
+    width: 28px; height: 24px;
+    border: 1.5px solid currentColor;
+    border-radius: 4px;
+    position: relative;
+  }
+  /* 竖列图标 */
+  .mode-icon.vstack::before {
+    content: "";
+    position: absolute; left: 4px; right: 4px; top: 4px;
+    height: 4px; background: currentColor; border-radius: 1px;
+    box-shadow: 0 6px 0 currentColor, 0 12px 0 currentColor;
+  }
+  /* 横向图标 */
+  .mode-icon.hstack::before {
+    content: "";
+    position: absolute; top: 4px; bottom: 4px; left: 4px;
+    width: 4px; background: currentColor; border-radius: 1px;
+    box-shadow: 6px 0 0 currentColor, 12px 0 0 currentColor, 18px 0 0 currentColor;
+  }
+  /* 叠放图标 */
+  .mode-icon.cascade::before {
+    content: "";
+    position: absolute; left: 4px; top: 4px;
+    width: 14px; height: 12px;
+    border: 1.5px solid currentColor;
+    border-radius: 2px;
+    box-shadow:
+      3px 3px 0 -1px var(--bg-elev),
+      3px 3px 0 0 currentColor,
+      6px 6px 0 -1px var(--bg-elev),
+      6px 6px 0 0 currentColor;
+  }
+
+  /* 屏幕边选择 */
+  .ctrl-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 0;
+    font-size: 12px;
+  }
+  .ctrl-label { color: var(--label-2); }
+  .seg-mini {
+    display: flex; gap: 2px;
+    background: var(--fill-1);
+    padding: 2px;
+    border-radius: 7px;
+  }
+  .seg-mini-item {
+    padding: 3px 9px; border-radius: 5px;
+    font-size: 11px; cursor: pointer;
+    color: var(--label-2);
+  }
+  .seg-mini-item.active { background: var(--bg-elev); font-weight: 600; box-shadow: 0 0.5px 1px rgba(0,0,0,0.1); }
+
+  .gap-row {
+    padding: 8px 0;
+    border-top: 0.5px solid var(--sep);
+  }
+  .slider-row {
+    display: flex; align-items: center; gap: 10px;
+    margin-top: 6px;
+  }
+  .slider-track {
+    flex: 1; height: 4px; background: var(--fill-2);
+    border-radius: 2px; position: relative;
+  }
+  .slider-track::after {
+    content: ""; position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 30%; background: var(--blue);
+    border-radius: 2px;
+  }
+  .slider-track::before {
+    content: ""; position: absolute;
+    left: 30%; top: -3px;
+    width: 10px; height: 10px;
+    background: white; border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+  .slider-val {
+    font-family: ui-monospace, monospace;
+    font-size: 11px; color: var(--label-2);
+    min-width: 32px; text-align: right;
+  }
+
+  .auto-toggle {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 0 4px;
+    border-top: 0.5px solid var(--sep);
+  }
+  .toggle {
+    width: 32px; height: 20px; border-radius: 999px;
+    background: var(--green);
+    position: relative;
+  }
+  .toggle::after {
+    content: ""; position: absolute;
+    top: 1px; left: 13px;
+    width: 18px; height: 18px;
+    background: white; border-radius: 50%;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  }
+  .toggle.off { background: var(--label-4); }
+  .toggle.off::after { left: 1px; }
+
+  .arrange-btn {
+    margin-top: 12px;
+    width: 100%;
+    padding: 10px;
+    background: var(--blue);
+    color: white;
+    border: none; border-radius: 8px;
+    font-size: 13px; font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0,113,227,0.25);
+  }
+  .arrange-btn:hover { background: #0062c6; }
+
+  .ctrl-foot {
+    background: var(--bg-sec);
+    border-top: 0.5px solid var(--sep);
+    padding: 10px 14px;
+    font-size: 11px;
+    color: var(--label-3);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .kbd {
+    display: inline-block; padding: 1px 6px;
+    background: var(--fill-1);
+    border: 0.5px solid var(--hairline);
+    border-radius: 4px;
+    font-family: ui-monospace, monospace;
+    font-size: 10px;
+    color: var(--label-2);
+  }
+
+  /* ─── 浮起的 callout (说明) ─── */
+  .callout {
+    position: absolute;
+    background: var(--label);
+    color: var(--bg-elev);
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.5;
+    box-shadow: var(--shadow-lg);
+    z-index: 80;
+    max-width: 220px;
+  }
+
+  /* ─── Section B: 三种模式对比 ─── */
+  .compare-section {
+    background: var(--bg);
+    padding: 48px 32px;
+    max-width: 1500px;
+    margin: 0 auto;
+  }
+  .compare-h {
+    font-size: 24px; font-weight: 700;
+    letter-spacing: -0.5px;
+    margin-bottom: 6px;
+  }
+  .compare-sub {
+    font-size: 13px; color: var(--label-3);
+    margin-bottom: 28px;
+  }
+  .compare-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 20px;
+  }
+  .compare-card {
+    background: var(--bg-elev);
+    border-radius: var(--r-xl);
+    border: 0.5px solid var(--hairline);
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+  }
+  .compare-preview {
+    height: 280px;
+    background: linear-gradient(135deg, #c5d8e8 0%, #ddc8e0 100%);
+    position: relative;
+    border-bottom: 0.5px solid var(--sep);
+  }
+  @media (prefers-color-scheme: dark) {
+    .compare-preview { background: linear-gradient(135deg, #1a2238, #2a1845); }
+  }
+  .compare-info { padding: 18px 20px; }
+  .compare-mode { font-size: 12px; color: var(--label-3); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+  .compare-name { font-size: 18px; font-weight: 700; margin-top: 4px; letter-spacing: -0.3px; }
+  .compare-desc { font-size: 13px; color: var(--label-2); margin-top: 8px; line-height: 1.55; }
+  .compare-pro {
+    margin-top: 14px;
+    padding: 10px 12px;
+    background: rgba(52,199,89,0.08);
+    border-radius: 8px;
+    font-size: 12px;
+    color: var(--green);
+    border-left: 3px solid var(--green);
+  }
+
+  /* Vertical preview */
+  .preview-mini {
+    position: absolute;
+    background: white;
+    border-radius: 5px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+    border: 0.5px solid rgba(0,0,0,0.08);
+    overflow: hidden;
+  }
+  .preview-mini-tb {
+    height: 8px;
+    background: #f0f0f3;
+    border-bottom: 0.5px solid rgba(0,0,0,0.05);
+  }
+  .preview-mini-bd {
+    background: #fafafa;
+  }
+  /* Vertical mode preview */
+  .v-preview .preview-mini { width: 90px; height: 56px; left: 14px; }
+  .v-preview .preview-mini:nth-child(1) { top: 14px; }
+  .v-preview .preview-mini:nth-child(2) { top: 76px; }
+  .v-preview .preview-mini:nth-child(3) { top: 138px; }
+  .v-preview .preview-mini:nth-child(4) { top: 200px; }
+  .v-preview .preview-mini:nth-child(1) .preview-mini-bd { background: linear-gradient(135deg, #fce7f3, #fbcfe8); }
+  .v-preview .preview-mini:nth-child(2) .preview-mini-bd { background: linear-gradient(135deg, #1e293b, #0f172a); }
+  .v-preview .preview-mini:nth-child(3) .preview-mini-bd { background: linear-gradient(135deg, #fef3c7, #fde68a); }
+  .v-preview .preview-mini:nth-child(4) .preview-mini-bd { background: #18181b; }
+  .v-preview .preview-mini-bd { height: 48px; }
+
+  /* Horizontal mode preview */
+  .h-preview .preview-mini { width: 60px; height: 44px; bottom: 14px; }
+  .h-preview .preview-mini:nth-child(1) { left: 14px; }
+  .h-preview .preview-mini:nth-child(2) { left: 80px; }
+  .h-preview .preview-mini:nth-child(3) { left: 146px; }
+  .h-preview .preview-mini:nth-child(4) { left: 212px; }
+  .h-preview .preview-mini:nth-child(5) { left: 278px; }
+  .h-preview .preview-mini-bd { height: 36px; }
+  .h-preview .preview-mini:nth-child(1) .preview-mini-bd { background: linear-gradient(135deg, #fce7f3, #fbcfe8); }
+  .h-preview .preview-mini:nth-child(2) .preview-mini-bd { background: linear-gradient(135deg, #1e293b, #0f172a); }
+  .h-preview .preview-mini:nth-child(3) .preview-mini-bd { background: linear-gradient(135deg, #fef3c7, #fde68a); }
+  .h-preview .preview-mini:nth-child(4) .preview-mini-bd { background: #18181b; }
+  .h-preview .preview-mini:nth-child(5) .preview-mini-bd { background: linear-gradient(135deg, #d1fae5, #a7f3d0); }
+
+  /* Cascade mode preview */
+  .c-preview .preview-mini { width: 110px; height: 70px; }
+  .c-preview .preview-mini:nth-child(1) { top: 30px; left: 30px; z-index: 1; }
+  .c-preview .preview-mini:nth-child(2) { top: 50px; left: 50px; z-index: 2; }
+  .c-preview .preview-mini:nth-child(3) { top: 70px; left: 70px; z-index: 3; }
+  .c-preview .preview-mini:nth-child(4) { top: 90px; left: 90px; z-index: 4; }
+  .c-preview .preview-mini:nth-child(5) { top: 110px; left: 110px; z-index: 5; box-shadow: 0 8px 16px rgba(0,0,0,0.18); }
+  .c-preview .preview-mini-bd { height: 62px; }
+  .c-preview .preview-mini:nth-child(1) .preview-mini-bd { background: linear-gradient(135deg, #fce7f3, #fbcfe8); }
+  .c-preview .preview-mini:nth-child(2) .preview-mini-bd { background: linear-gradient(135deg, #1e293b, #0f172a); }
+  .c-preview .preview-mini:nth-child(3) .preview-mini-bd { background: linear-gradient(135deg, #fef3c7, #fde68a); }
+  .c-preview .preview-mini:nth-child(4) .preview-mini-bd { background: #18181b; }
+  .c-preview .preview-mini:nth-child(5) .preview-mini-bd { background: linear-gradient(135deg, #d1fae5, #a7f3d0); }
+
+  /* ─── Section C: 流程说明 ─── */
+  .flow-section {
+    background: var(--bg-sec);
+    padding: 48px 32px;
+    border-top: 0.5px solid var(--sep);
+  }
+  .flow-grid {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+  }
+  .flow-card {
+    background: var(--bg-elev);
+    border-radius: var(--r-lg);
+    border: 0.5px solid var(--hairline);
+    padding: 18px 20px;
+    box-shadow: var(--shadow-sm);
+  }
+  .flow-num {
+    width: 28px; height: 28px;
+    background: var(--blue);
+    color: white;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700;
+    margin-bottom: 12px;
+  }
+  .flow-title { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+  .flow-text { font-size: 12px; color: var(--label-2); line-height: 1.55; }
+
+  .pain-banner {
+    max-width: 1400px;
+    margin: 28px auto;
+    padding: 16px 24px;
+    background: linear-gradient(135deg, #fff5e6 0%, #ffe0d0 100%);
+    border: 1px solid rgba(255,149,0,0.3);
+    border-radius: var(--r-lg);
+    display: flex; gap: 14px; align-items: flex-start;
+  }
+  @media (prefers-color-scheme: dark) {
+    .pain-banner { background: rgba(255,149,0,0.08); border-color: rgba(255,149,0,0.2); }
+  }
+  .pain-icon {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, #ff9500, #ff3b30);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0;
+  }
+  .pain-h { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+  .pain-t { font-size: 12px; color: var(--label-2); line-height: 1.6; }
+  .pain-t s { color: var(--red); }
+  .pain-t strong { color: var(--green); }
+</style>
+</head>
+<body>
+
+<!-- ═══ A. 主场景：竖列模式 ═══ -->
+<div class="desktop">
+  <div class="menubar">
+    <span style="font-weight:600;">🍎</span>
+    <span>Minbar</span>
+    <span>File</span>
+    <span>View</span>
+    <span class="menubar-spacer"></span>
+    <span class="menubar-logo" title="点击此图标弹出摆放控制器">★</span>
+    <span>2026/4/27 周一 14:32</span>
+  </div>
+
+  <!-- 主屏：用户的主要工作区（CRM）-->
+  <div class="crm">
+    <div class="crm-h">📞 客服工作台</div>
+    <div class="crm-sub">主屏继续处理工单，左侧 6 个独立小窗实时监听不同群</div>
+    <div class="crm-blocks">
+      <div class="crm-block"><div class="crm-block-h">紧急工单</div><div class="crm-block-num" style="color:#ff3b30;">3</div><div class="crm-block-sub">需要立即处理</div></div>
+      <div class="crm-block"><div class="crm-block-h">待处理</div><div class="crm-block-num" style="color:#ff9500;">12</div><div class="crm-block-sub">2 小时内回复</div></div>
+      <div class="crm-block"><div class="crm-block-h">今日已解决</div><div class="crm-block-num" style="color:#34c759;">47</div><div class="crm-block-sub">SLA 98%</div></div>
+    </div>
+  </div>
+
+  <!-- ★ 左侧 8 个独立小窗（竖列摆放）★ -->
+  <div class="vstack">
+
+    <div class="mini">
+      <div class="mini-tb">
+        <div class="mini-traffic"><div class="mini-light r"></div><div class="mini-light y"></div><div class="mini-light g"></div></div>
+        <img class="mini-favicon" src="https://cdn.simpleicons.org/wechat/07C160">
+        <span class="mini-title">客户A · 重要群</span>
+      </div>
+      <div class="mini-body">
+        <div class="msg-line"><span class="msg-from" style="color:#ff3b30;">王经理：</span>麻烦看下订单异常</div>
+        <div class="msg-line"><span class="msg-from" style="color:#0a84ff;">小李：</span>正在处理</div>
+        <div class="unread">3</div>
+      </div>
+    </div>
+
+    <div class="mini">
+      <div class="mini-tb">
+        <div class="mini-traffic"><div class="mini-light r"></div><div class="mini-light y"></div><div class="mini-light g"></div></div>
+        <img class="mini-favicon" src="https://cdn.simpleicons.org/wechat/07C160">
+        <span class="mini-title">客户B · 售后</span>
+      </div>
+      <div class="mini-body">
+        <div class="msg-line"><span class="msg-from" style="color:#34c759;">陈先生：</span>退款已收到</div>
+        <div class="msg-line"><span class="msg-from" style="color:#ff9500;">张女士：</span>物流怎么查</div>
+      </div>
+    </div>
+
+    <div class="mini">
+      <div class="mini-tb">
+        <div class="mini-traffic"><div class="mini-light r"></div><div class="mini-light y"></div><div class="mini-light g"></div></div>
+        <img class="mini-favicon" src="https://cdn.simpleicons.org/wechat/07C160">
+        <span class="mini-title">VIP 客户</span>
+      </div>
+      <div class="mini-body">
+        <div class="msg-line"><span class="msg-from" style="color:#bf5af2;">徐总：</span>系统打不开！</div>
+        <div class="msg-line"><span class="msg-from" style="color:#bf5af2;">徐总：</span>影响一笔大单</div>
+        <div class="unread">5</div>
+      </div>
+    </div>
+
+    <div class="mini">
+      <div class="mini-tb">
+        <div class="mini-traffic"><div class="mini-light r"></div><div class="mini-light y"></div><div class="mini-light g"></div></div>
+        <img class="mini-favicon" src="https://cdn.simpleicons.org/feishu/00D6B9">
+        <span class="mini-title">飞书 · 重点客户</span>
+      </div>
+      <div class="mini-body">
+        <div class="msg-line"><span class="msg-from" style="color:#34c759;">@小李</span> 客户咨询新功能</div>
+        <div class="unread">1</div>
+      </div>
+    </div>
+
+    <div class="mini">
+      <div class="mini-tb">
+        <div class="mini-traffic"><div class="mini-light r"></div><div class="mini-light y"></div><div class="mini-light g"></div></div>
+        <img class="mini-favicon" src="https://cdn.simpleicons.org/slack/4A154B">
+        <span class="mini-title">Slack · #support</span>
+      </div>
+      <div class="mini-body">
+        <div class="msg-line"><span class="msg-from" style="color:#5e5ce6;">Mike：</span>API timeout?</div>
+        <div class="msg-line"><span class="msg-from" style="color:#0a84ff;">Anna：</span>checking...</div>
+      </div>
+    </div>
+
+    <div class="mini">
+      <div class="mini-tb">
+        <div class="mini-traffic"><div class="mini-light r"></div><div class="mini-light y"></div><div class="mini-light g"></div></div>
+        <img class="mini-favicon" src="https://cdn.simpleicons.org/jira/0052CC">
+        <span class="mini-title">Jira · 我的</span>
+      </div>
+      <div class="mini-body">
+        <div class="msg-line"><span class="msg-from" style="color:#0a84ff;">Jira：</span>3 个 bug 待修</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ★ 摆放控制器（菜单栏点开后浮出） ★ -->
+  <div class="ctrl">
+    <div class="ctrl-head">
+      <div class="ctrl-title">🪟 多窗摆放</div>
+      <div class="ctrl-sub">当前 6 个独立窗口 · 一键自动整理</div>
+    </div>
+    <div class="ctrl-body">
+
+      <!-- 三种模式 -->
+      <div class="mode-grp">
+        <div class="mode-btn active">
+          <div class="mode-icon vstack"></div>
+          <span>竖列</span>
+        </div>
+        <div class="mode-btn">
+          <div class="mode-icon hstack"></div>
+          <span>横向</span>
+        </div>
+        <div class="mode-btn">
+          <div class="mode-icon cascade"></div>
+          <span>叠放</span>
+        </div>
+      </div>
+
+      <!-- 屏幕边 -->
+      <div class="ctrl-row">
+        <div class="ctrl-label">贴边</div>
+        <div class="seg-mini">
+          <div class="seg-mini-item active">左</div>
+          <div class="seg-mini-item">右</div>
+          <div class="seg-mini-item">上</div>
+          <div class="seg-mini-item">下</div>
+        </div>
+      </div>
+
+      <!-- 间距 -->
+      <div class="gap-row">
+        <div class="ctrl-row" style="padding-bottom:0;">
+          <div class="ctrl-label">间距</div>
+          <span class="slider-val">8 px</span>
+        </div>
+        <div class="slider-row">
+          <div class="slider-track"></div>
+        </div>
+      </div>
+
+      <!-- 自动重排 -->
+      <div class="auto-toggle">
+        <div>
+          <div style="font-size:12px;font-weight:500;">关闭后自动补位</div>
+          <div style="font-size:11px;color:var(--label-3);margin-top:2px;">删除窗口后剩余自动收紧</div>
+        </div>
+        <div class="toggle"></div>
+      </div>
+
+      <!-- 大按钮 -->
+      <button class="arrange-btn">⌘⌥R · 一键整理</button>
+    </div>
+    <div class="ctrl-foot">
+      <span>📌 控制器仅作排列用，不影响每个窗口的独立性</span>
+    </div>
+  </div>
+
+  <!-- 注释 -->
+  <div class="callout" style="top: 80px; right: 320px;">
+    <strong>菜单栏点 ★</strong> 弹出此面板<br>
+    一键 ⌘⌥R 整理所有窗口
+  </div>
+
+  <div class="callout" style="top: 360px; left: 280px; max-width: 240px;">
+    <strong>左侧整齐排列的小窗</strong><br>
+    每个都是<u>独立浏览器</u>，可单独关闭、移动、改 URL<br>
+    位置乱了 → 一键整理回来
+  </div>
+</div>
+
+<!-- ═══ B. 三种摆放模式对比 ═══ -->
+<div class="compare-section">
+  <div class="compare-h">三种摆放模式</div>
+  <div class="compare-sub">每种模式都贴主屏边缘，不挡主工作区。点 ⌘⌥R 任何时候重新排列。</div>
+
+  <div class="compare-grid">
+    <!-- 竖列 -->
+    <div class="compare-card">
+      <div class="compare-preview v-preview">
+        <div class="preview-mini"><div class="preview-mini-tb"></div><div class="preview-mini-bd"></div></div>
+        <div class="preview-mini"><div class="preview-mini-tb"></div><div class="preview-mini-bd"></div></div>
+        <div class="preview-mini"><div class="preview-mini-tb"></div><div class="preview-mini-bd"></div></div>
+        <div class="preview-mini"><div class="preview-mini-tb"></div><div class="preview-mini-bd"></div></div>
+      </div>
+      <div class="compare-info">
+        <div class="compare-mode">MODE 1 · VERTICAL</div>
+        <div class="compare-name">竖列模式</div>
+        <div class="compare-desc">所有小窗按顺序竖直排列，贴左/右边。<strong>每个全部可见</strong>，适合 5–8 个窗口同时监听。</div>
+        <div class="compare-pro">✓ 推荐：客服监控 / 多群消息</div>
+      </div>
+    </div>
+
+    <!-- 横向 -->
+    <div class="compare-card">
+      <div class="compare-preview h-preview">
+        <div class="preview-mini"><div class="preview-mini-tb"></div><div class="preview-mini-bd"></div></div>
+        <div class="preview-mini"><div class="preview-mini-tb"></div><div class="preview-mini-bd"></div></div>
+        <div class="preview-mini"><div class="preview-mini-tb"></div><div class="preview-mini-bd"></div></div>
+        <div class="preview-mini"><div class="preview-mini-tb"></div><div class="preview-mini-bd"></div></div>
+        <div class="preview-mini"><div class="preview-mini-tb"></div><div class="preview-mini-bd"></div></div>
+      </div>
+      <div class="compare-info">
+        <div class="compare-mode">MODE 2 · HORIZONTAL</div>
+        <div class="compare-name">横向模式</div>
+        <div class="compare-desc">所有小窗排成一行，贴底部/顶部。占用屏幕高度小，<strong>下方 dock 般</strong>，适合宽屏。</div>
+        <div class="compare-pro">✓ 推荐：宽屏显示器 / 简单监控</div>
+      </div>
+    </div>
+
+    <!-- 叠放 -->
+    <div class="compare-card">
+      <div class="compare-preview c-preview">
+        <div class="preview-mini"><div class="preview-mini-tb"></div><div class="preview-mini-bd"></div></div>
+        <div class="preview-mini"><div class="preview-mini-tb"></div><div class="preview-mini-bd"></div></div>
+        <div class="preview-mini"><div class="preview-mini-tb"></div><div class="preview-mini-bd"></div></div>
+        <div class="preview-mini"><div class="preview-mini-tb"></div><div class="preview-mini-bd"></div></div>
+        <div class="preview-mini"><div class="preview-mini-tb"></div><div class="preview-mini-bd"></div></div>
+      </div>
+      <div class="compare-info">
+        <div class="compare-mode">MODE 3 · CASCADE</div>
+        <div class="compare-name">叠放模式</div>
+        <div class="compare-desc">小窗错位叠放，每个露出 20px 标题栏。<strong>占地最小</strong>，但同时只能看到最上层。点击切换。</div>
+        <div class="compare-pro">✓ 推荐：窗口数量多但不需同时看</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ C. 痛点 + 流程 ═══ -->
+<div class="flow-section">
+  <div class="pain-banner">
+    <div class="pain-icon">💡</div>
+    <div>
+      <div class="pain-h">这次解决的核心痛点</div>
+      <div class="pain-t">
+        <s>每次手动调整每个小窗位置太累</s> · <s>放大查看后再缩回，原位置就乱了</s> · <s>10 个窗口 10 次点击调整</s><br>
+        <strong>→ 现在：⌘⌥R 一键整理；窗口关闭/新增自动重排；位置乱了重新触发即可</strong>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-grid">
+    <div class="flow-card">
+      <div class="flow-num">1</div>
+      <div class="flow-title">每个窗口独立打开</div>
+      <div class="flow-text">从菜单栏 ★ 点击「新建窗口」，或在已有窗口里点 ⊕ —— 每个新窗口完全独立，独立 Cookie / 独立代理 / 独立 URL。</div>
+    </div>
+    <div class="flow-card">
+      <div class="flow-num">2</div>
+      <div class="flow-title">选摆放模式</div>
+      <div class="flow-text">控制器选竖列 / 横向 / 叠放，再选贴左 / 右 / 上 / 下边。设置后保留为默认。</div>
+    </div>
+    <div class="flow-card">
+      <div class="flow-num">3</div>
+      <div class="flow-title">⌘⌥R 一键整理</div>
+      <div class="flow-text">所有 Minbar 小窗瞬间按当前模式整齐排好，间距一致。无论之前位置多乱。</div>
+    </div>
+    <div class="flow-card">
+      <div class="flow-num">4</div>
+      <div class="flow-title">关闭/缩放自动补位</div>
+      <div class="flow-text">关掉一个窗口，剩下的自动收紧。点开放大某个再缩回，App 自动放回原位置不需要你管。</div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Minbar Mockup C — 玻璃拟物</title>
+<style>
+  *,*::before,*::after { margin:0; padding:0; box-sizing:border-box; }
+  html, body { min-height: 100vh; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Helvetica Neue", sans-serif;
+    color: #1d1d1f;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* 渐变动画背景 */
+  body::before {
+    content: "";
+    position: fixed; inset: 0; z-index: -2;
+    background: linear-gradient(125deg, #fbc2eb 0%, #a6c1ee 33%, #c2e9fb 66%, #ffd3a5 100%);
+    background-size: 300% 300%;
+    animation: gradient 18s ease infinite;
+  }
+  @keyframes gradient {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+  /* 浮动光斑 */
+  body::after {
+    content: "";
+    position: fixed; inset: 0; z-index: -1;
+    background:
+      radial-gradient(circle at 20% 30%, rgba(255,255,255,0.4) 0%, transparent 40%),
+      radial-gradient(circle at 80% 70%, rgba(255,200,255,0.3) 0%, transparent 50%);
+    pointer-events: none;
+  }
+  @media (prefers-color-scheme: dark) {
+    body { color: #f5f5f7; }
+    body::before {
+      background: linear-gradient(125deg, #2d1b69 0%, #11999e 33%, #1a1a2e 66%, #4a1942 100%);
+      background-size: 300% 300%;
+    }
+  }
+
+  /* 顶部导航 */
+  .nav {
+    position: sticky; top: 16px; z-index: 10;
+    margin: 16px auto 24px;
+    max-width: 760px;
+    padding: 8px 12px;
+    display: flex; align-items: center; justify-content: space-between;
+    background: rgba(255,255,255,0.5);
+    backdrop-filter: blur(30px) saturate(180%);
+    -webkit-backdrop-filter: blur(30px) saturate(180%);
+    border: 1px solid rgba(255,255,255,0.6);
+    border-radius: 999px;
+    box-shadow: 0 8px 32px rgba(31,38,135,0.1);
+  }
+  @media (prefers-color-scheme: dark) {
+    .nav { background: rgba(40,40,50,0.5); border-color: rgba(255,255,255,0.1); }
+  }
+  .brand {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 14px; font-weight: 700;
+    padding-left: 8px;
+  }
+  .tabs { display: flex; gap: 4px; }
+  .tab {
+    padding: 8px 16px; border-radius: 999px;
+    font-size: 13px; cursor: pointer;
+    transition: all .2s;
+  }
+  .tab:hover { background: rgba(255,255,255,0.5); }
+  .tab.active { background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.08); font-weight: 500; }
+  @media (prefers-color-scheme: dark) {
+    .tab:hover { background: rgba(255,255,255,0.1); }
+    .tab.active { background: rgba(255,255,255,0.18); color: #fff; }
+  }
+
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 28px 40px;
+  }
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* 玻璃面板基底 */
+  .glass {
+    background: rgba(255,255,255,0.55);
+    backdrop-filter: blur(30px) saturate(160%);
+    -webkit-backdrop-filter: blur(30px) saturate(160%);
+    border: 1px solid rgba(255,255,255,0.7);
+    border-radius: 24px;
+    box-shadow: 0 8px 32px rgba(31,38,135,0.08);
+  }
+  @media (prefers-color-scheme: dark) {
+    .glass { background: rgba(40,40,50,0.4); border-color: rgba(255,255,255,0.1); }
+  }
+
+  /* Hero 时间面板 */
+  .hero {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 20px;
+    margin-bottom: 24px;
+  }
+  .clock-panel {
+    padding: 32px;
+    text-align: center;
+  }
+  .greeting {
+    font-size: 13px;
+    color: rgba(0,0,0,0.55);
+    margin-bottom: 12px;
+    font-weight: 500;
+  }
+  @media (prefers-color-scheme: dark) { .greeting { color: rgba(255,255,255,0.7); } }
+  .clock {
+    font-size: 72px; font-weight: 200;
+    letter-spacing: -3px; line-height: 1;
+    font-feature-settings: "tnum";
+    background: linear-gradient(135deg, #6366f1 0%, #ec4899 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .date {
+    font-size: 14px; margin-top: 8px;
+    color: rgba(0,0,0,0.6);
+  }
+  @media (prefers-color-scheme: dark) { .date { color: rgba(255,255,255,0.7); } }
+
+  .weather-panel {
+    padding: 24px;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    text-align: center;
+  }
+  .w-icon { font-size: 56px; margin-bottom: 8px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.15)); }
+  .w-temp {
+    font-size: 42px; font-weight: 600;
+    background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    line-height: 1;
+  }
+  .w-meta { font-size: 13px; color: rgba(0,0,0,0.6); margin-top: 6px; }
+  @media (prefers-color-scheme: dark) { .w-meta { color: rgba(255,255,255,0.7); } }
+
+  /* 搜索 */
+  .search {
+    display: flex; gap: 10px;
+    margin-bottom: 32px;
+    padding: 6px 6px 6px 20px;
+    background: rgba(255,255,255,0.6);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.7);
+    border-radius: 999px;
+    box-shadow: 0 4px 16px rgba(31,38,135,0.08);
+  }
+  @media (prefers-color-scheme: dark) {
+    .search { background: rgba(40,40,50,0.4); border-color: rgba(255,255,255,0.1); }
+  }
+  .input {
+    flex: 1; background: transparent; border: none; outline: none;
+    font-size: 14px; padding: 10px 0;
+    color: inherit;
+  }
+  .input::placeholder { color: rgba(0,0,0,0.4); }
+  @media (prefers-color-scheme: dark) { .input::placeholder { color: rgba(255,255,255,0.4); } }
+  .btn {
+    padding: 10px 22px; border: none; border-radius: 999px;
+    background: linear-gradient(135deg, #6366f1 0%, #ec4899 100%);
+    color: white; cursor: pointer; font-size: 13px; font-weight: 600;
+    box-shadow: 0 4px 12px rgba(99,102,241,0.4);
+  }
+  .btn:hover { transform: translateY(-1px); }
+
+  /* 分类卡片 */
+  .section { margin-bottom: 28px; }
+  .section-title {
+    font-size: 14px; font-weight: 700;
+    margin-bottom: 14px; padding-left: 8px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 12px;
+  }
+  .card {
+    padding: 16px 8px;
+    text-align: center;
+    cursor: pointer;
+    transition: all .2s;
+    border-radius: 18px;
+    background: rgba(255,255,255,0.55);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border: 1px solid rgba(255,255,255,0.6);
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+  }
+  @media (prefers-color-scheme: dark) {
+    .card { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.08); }
+  }
+  .card:hover {
+    transform: translateY(-4px) scale(1.04);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.12);
+    background: white;
+  }
+  @media (prefers-color-scheme: dark) {
+    .card:hover { background: rgba(255,255,255,0.15); }
+  }
+  .card-icon {
+    font-size: 32px;
+    width: 48px; height: 48px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 14px;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+  }
+  .card-name { font-size: 12px; font-weight: 600; }
+
+  /* 分类色调 */
+  .ent .card-icon { background: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%); }
+  .tech .card-icon { background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); }
+  .crypto .card-icon { background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); }
+  .news .card-icon { background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); }
+  .tools .card-icon { background: linear-gradient(135deg, #e9d5ff 0%, #d8b4fe 100%); }
+
+  /* 历史 */
+  .item {
+    display: grid;
+    grid-template-columns: 44px 1fr auto;
+    align-items: center; gap: 14px;
+    padding: 12px 18px;
+    margin-bottom: 8px;
+    border-radius: 16px;
+    background: rgba(255,255,255,0.55);
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(255,255,255,0.6);
+    cursor: pointer; transition: all .15s;
+  }
+  @media (prefers-color-scheme: dark) {
+    .item { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.08); }
+  }
+  .item:hover { transform: translateX(4px); background: white; }
+  @media (prefers-color-scheme: dark) {
+    .item:hover { background: rgba(255,255,255,0.15); }
+  }
+  .item-icon {
+    font-size: 22px; width: 44px; height: 44px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 12px; background: rgba(255,255,255,0.7);
+  }
+  .item-title { font-size: 14px; font-weight: 600; }
+  .item-url { font-size: 12px; color: rgba(0,0,0,0.55); margin-top: 2px; font-family: ui-monospace,monospace; }
+  @media (prefers-color-scheme: dark) { .item-url { color: rgba(255,255,255,0.55); } }
+  .meta { font-size: 12px; color: rgba(0,0,0,0.5); padding: 4px 10px; border-radius: 999px; background: rgba(255,255,255,0.5); }
+  @media (prefers-color-scheme: dark) { .meta { color: rgba(255,255,255,0.7); background: rgba(255,255,255,0.08); } }
+
+  /* 关于 */
+  .about-glass { padding: 32px; margin-bottom: 16px; }
+  .about-h {
+    font-size: 28px; font-weight: 700; margin-bottom: 4px;
+    background: linear-gradient(135deg, #6366f1 0%, #ec4899 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .about-v { font-size: 13px; opacity: 0.6; margin-bottom: 0; }
+  .about-row { font-size: 14px; line-height: 1.8; }
+  .about-row + .about-row { margin-top: 14px; }
+  .about-label {
+    font-size: 13px; font-weight: 600;
+    margin-bottom: 6px; opacity: 0.85;
+  }
+  .kbd {
+    display: inline-block; padding: 2px 9px;
+    background: rgba(255,255,255,0.7);
+    border: 1px solid rgba(0,0,0,0.08);
+    border-radius: 6px;
+    font-family: ui-monospace, monospace; font-size: 12px;
+    margin: 0 2px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  }
+  @media (prefers-color-scheme: dark) {
+    .kbd { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.15); }
+  }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <div class="brand">🐟 <span>Minbar</span></div>
+  <div class="tabs">
+    <div class="tab active" onclick="go(this,'home')">首页</div>
+    <div class="tab" onclick="go(this,'history')">历史</div>
+    <div class="tab" onclick="go(this,'about')">关于</div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- 首页 -->
+  <div class="page active" id="home">
+    <div class="hero">
+      <div class="glass clock-panel">
+        <div class="greeting">下午好，准备摸点鱼了？</div>
+        <div class="clock" id="clock">14:32</div>
+        <div class="date">2026年4月27日 · 星期一</div>
+      </div>
+      <div class="glass weather-panel">
+        <div class="w-icon">☀️</div>
+        <div class="w-temp">22°</div>
+        <div class="w-meta">深圳 · 晴 · 微风</div>
+      </div>
+    </div>
+
+    <div class="search">
+      <input class="input" placeholder="输入网址或搜索关键词，回车直达">
+      <button class="btn">搜索</button>
+    </div>
+
+    <div class="section ent">
+      <div class="section-title">📺 娱乐区</div>
+      <div class="grid">
+        <div class="card"><div class="card-icon">📺</div><div class="card-name">B站</div></div>
+        <div class="card"><div class="card-icon">▶️</div><div class="card-name">YouTube</div></div>
+        <div class="card"><div class="card-icon">🎶</div><div class="card-name">抖音</div></div>
+        <div class="card"><div class="card-icon">📕</div><div class="card-name">小红书</div></div>
+        <div class="card"><div class="card-icon">💬</div><div class="card-name">微博</div></div>
+        <div class="card"><div class="card-icon">🐦</div><div class="card-name">X</div></div>
+        <div class="card"><div class="card-icon">📷</div><div class="card-name">Insta</div></div>
+        <div class="card"><div class="card-icon">🎵</div><div class="card-name">TikTok</div></div>
+        <div class="card"><div class="card-icon">🎬</div><div class="card-name">Netflix</div></div>
+        <div class="card"><div class="card-icon">👽</div><div class="card-name">Reddit</div></div>
+      </div>
+    </div>
+
+    <div class="section tech">
+      <div class="section-title">💻 互联网技术区</div>
+      <div class="grid">
+        <div class="card"><div class="card-icon">🐙</div><div class="card-name">GitHub</div></div>
+        <div class="card"><div class="card-icon">📚</div><div class="card-name">SO</div></div>
+        <div class="card"><div class="card-icon">💎</div><div class="card-name">掘金</div></div>
+        <div class="card"><div class="card-icon">💭</div><div class="card-name">V2EX</div></div>
+        <div class="card"><div class="card-icon">📰</div><div class="card-name">HN</div></div>
+        <div class="card"><div class="card-icon">🚀</div><div class="card-name">36Kr</div></div>
+      </div>
+    </div>
+
+    <div class="section crypto">
+      <div class="section-title">💰 炒币区</div>
+      <div class="grid">
+        <div class="card"><div class="card-icon">🟡</div><div class="card-name">币安</div></div>
+        <div class="card"><div class="card-icon">⚫</div><div class="card-name">OKX</div></div>
+        <div class="card"><div class="card-icon">📊</div><div class="card-name">CMC</div></div>
+        <div class="card"><div class="card-icon">📈</div><div class="card-name">TV</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 历史 -->
+  <div class="page" id="history">
+    <div class="glass" style="padding:28px; margin-bottom:16px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <div style="font-size:20px;font-weight:700;">⏱️ 浏览历史</div>
+          <div style="font-size:12px;opacity:0.6;margin-top:4px;">保留最近 7 天，过期自动清理</div>
+        </div>
+        <button class="btn" style="padding:8px 16px;">清空</button>
+      </div>
+    </div>
+    <div class="item"><div class="item-icon">🐙</div><div><div class="item-title">GitHub</div><div class="item-url">github.com/explore</div></div><div class="meta">2 分钟前</div></div>
+    <div class="item"><div class="item-icon">📺</div><div><div class="item-title">哔哩哔哩</div><div class="item-url">m.bilibili.com</div></div><div class="meta">15 分钟前</div></div>
+    <div class="item"><div class="item-icon">🤖</div><div><div class="item-title">ChatGPT</div><div class="item-url">chat.openai.com</div></div><div class="meta">1 小时前</div></div>
+    <div class="item"><div class="item-icon">📕</div><div><div class="item-title">小红书</div><div class="item-url">xiaohongshu.com</div></div><div class="meta">3 小时前</div></div>
+    <div class="item"><div class="item-icon">📊</div><div><div class="item-title">CoinMarketCap</div><div class="item-url">coinmarketcap.com</div></div><div class="meta">昨天 18:24</div></div>
+    <div class="item"><div class="item-icon">📰</div><div><div class="item-title">36Kr</div><div class="item-url">36kr.com</div></div><div class="meta">2 天前</div></div>
+  </div>
+
+  <!-- 关于 -->
+  <div class="page" id="about">
+    <div class="glass about-glass">
+      <div class="about-h">🐟 Minbar 摸鱼浏览器</div>
+      <div class="about-v">v1.3.0 · 2026.04 · macOS 11+ · Apple Silicon</div>
+    </div>
+
+    <div class="glass about-glass">
+      <div class="about-label">🎯 开发目的</div>
+      <div class="about-row">工作间隙偷得浮生半日闲。常驻菜单栏的小浮窗，单手快捷键就能召唤的浏览器，等比缩小到屏幕角落不影响主屏作业。点其他窗口自动缩回，随时回归"忙碌中"。数据全部本地，无云同步无追踪。</div>
+    </div>
+
+    <div class="glass about-glass">
+      <div class="about-label">⌨️ 快捷键</div>
+      <div class="about-row"><span class="kbd">⌥</span><span class="kbd">~</span> &nbsp;显示 / 隐藏窗口</div>
+      <div class="about-row"><span class="kbd">⌘</span><span class="kbd">⌥</span><span class="kbd">Q</span> &nbsp;退出 App</div>
+      <div class="about-row"><span class="kbd">⌘</span><span class="kbd">L</span> &nbsp;聚焦地址栏</div>
+      <div class="about-row">双击窗口 切换大小</div>
+    </div>
+
+    <div class="glass about-glass">
+      <div class="about-label">📂 数据存储（独立目录）</div>
+      <div class="about-row"><span class="kbd">~/.minbar/config.json</span> 用户配置</div>
+      <div class="about-row"><span class="kbd">~/.minbar-data/history.json</span> 浏览历史，7 天自动清理</div>
+      <div class="about-row"><span class="kbd">~/.minbar-data/cache/</span> 天气缓存（10 分钟刷新）</div>
+    </div>
+  </div>
+</div>
+
+<script>
+function go(el, id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (el) el.classList.add('active');
+}
+function tickClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent =
+    `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+}
+tickClock(); setInterval(tickClock, 30000);
+</script>
+</body>
+</html>

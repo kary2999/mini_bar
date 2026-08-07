@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Minbar · E 摸鱼模式 (Slack Mode)</title>
+<style>
+  :root {
+    --pink: #FF6B9D;
+    --orange: #FFA94D;
+    --yellow: #FFD93D;
+    --green: #4ECDC4;
+    --blue: #45B7E0;
+    --purple: #A78BFA;
+    --label: #1d1d1f;
+    --label-2: rgba(0,0,0,0.7);
+    --label-3: rgba(0,0,0,0.5);
+    --bg-card: rgba(255,255,255,0.78);
+    --shadow: 0 1px 2px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.06);
+    --shadow-lg: 0 8px 32px rgba(31,38,135,0.10);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --label: #f5f5f7;
+      --label-2: rgba(255,255,255,0.85);
+      --label-3: rgba(255,255,255,0.55);
+      --bg-card: rgba(40,40,55,0.55);
+      --shadow: 0 1px 2px rgba(0,0,0,0.4), 0 8px 24px rgba(0,0,0,0.3);
+      --shadow-lg: 0 8px 32px rgba(0,0,0,0.4);
+    }
+  }
+
+  *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { min-height: 100vh; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", sans-serif;
+    color: var(--label);
+    -webkit-font-smoothing: antialiased;
+    -webkit-user-select: none;
+    overflow-x: hidden;
+    position: relative;
+  }
+  /* Animated gradient background */
+  body::before {
+    content: "";
+    position: fixed; inset: 0; z-index: -3;
+    background: linear-gradient(135deg, #FFE5EC 0%, #FFF4D2 30%, #C5F4E0 60%, #B8E4F0 100%);
+    background-size: 200% 200%;
+    animation: bg 22s ease infinite;
+  }
+  @media (prefers-color-scheme: dark) {
+    body::before {
+      background: linear-gradient(135deg, #2D1B4E 0%, #4A1942 30%, #1A4D5C 60%, #0F2745 100%);
+      background-size: 200% 200%;
+    }
+  }
+  @keyframes bg {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+  body::after {
+    content: ""; position: fixed; inset: 0; z-index: -2;
+    background:
+      radial-gradient(circle at 15% 20%, rgba(255,180,200,0.4), transparent 40%),
+      radial-gradient(circle at 85% 80%, rgba(180,220,255,0.4), transparent 50%);
+    pointer-events: none;
+  }
+
+  /* ─── Window Frame ─── */
+  .frame {
+    height: 100vh; display: flex; flex-direction: column;
+  }
+
+  /* Tab bar */
+  .titlebar {
+    display: flex; align-items: stretch;
+    padding: 10px 14px 0;
+    backdrop-filter: blur(20px) saturate(180%);
+    background: rgba(255,255,255,0.4);
+    border-bottom: 1px solid rgba(255,255,255,0.5);
+  }
+  @media (prefers-color-scheme: dark) {
+    .titlebar { background: rgba(40,40,55,0.4); border-color: rgba(255,255,255,0.06); }
+  }
+  .tabs {
+    flex: 1; display: flex; gap: 4px;
+    align-items: flex-end;
+  }
+  .tab {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 14px;
+    border-radius: 12px 12px 0 0;
+    font-size: 13px; cursor: pointer;
+    color: var(--label-2);
+    min-width: 130px;
+    background: transparent;
+    transition: all 0.18s;
+  }
+  .tab.active {
+    background: var(--bg-card);
+    color: var(--label);
+    backdrop-filter: blur(20px);
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.04);
+    font-weight: 600;
+  }
+  .tab:hover:not(.active) { background: rgba(255,255,255,0.3); }
+  .tab img { width: 16px; height: 16px; border-radius: 4px; }
+  .tab-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+  .tab-close { width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; color: var(--label-3); }
+  .tab-close:hover { background: rgba(0,0,0,0.1); color: var(--label); }
+  .tab-add { padding: 0 14px; cursor: pointer; font-size: 18px; color: var(--label-2); display: flex; align-items: center; }
+
+  .titlebar-right {
+    display: flex; align-items: center; gap: 6px;
+    padding-bottom: 8px;
+  }
+  .mode-toggle {
+    display: flex; align-items: center; gap: 6px;
+    padding: 5px 12px 5px 6px;
+    background: linear-gradient(135deg, #FF6B9D 0%, #FFA94D 100%);
+    border-radius: 999px;
+    color: white; cursor: pointer;
+    font-size: 11px; font-weight: 700;
+    box-shadow: 0 4px 12px rgba(255,107,157,0.3);
+  }
+  .mode-toggle .dot {
+    width: 16px; height: 16px; border-radius: 50%;
+    background: white;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  }
+  .icon-btn {
+    width: 32px; height: 30px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.6);
+    backdrop-filter: blur(10px);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 14px;
+    color: var(--label);
+  }
+  .icon-btn:hover { background: white; transform: translateY(-1px); }
+  @media (prefers-color-scheme: dark) {
+    .icon-btn { background: rgba(255,255,255,0.08); color: var(--label); }
+    .icon-btn:hover { background: rgba(255,255,255,0.18); }
+  }
+
+  /* Address bar */
+  .addrbar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 14px;
+    background: rgba(255,255,255,0.55);
+    backdrop-filter: blur(15px);
+    border-bottom: 1px solid rgba(255,255,255,0.4);
+  }
+  @media (prefers-color-scheme: dark) {
+    .addrbar { background: rgba(40,40,55,0.4); border-color: rgba(255,255,255,0.05); }
+  }
+  .nav-icon {
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.5);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 14px;
+    color: var(--label);
+  }
+  .nav-icon:hover { background: white; }
+  @media (prefers-color-scheme: dark) {
+    .nav-icon { background: rgba(255,255,255,0.08); }
+  }
+  .url-pill {
+    flex: 1;
+    padding: 7px 16px;
+    background: white;
+    border-radius: 999px;
+    font-size: 13px;
+    color: var(--label);
+    border: none; outline: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    font-family: -apple-system, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    .url-pill { background: rgba(255,255,255,0.1); color: var(--label); }
+  }
+  .proxy-pill {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 14px;
+    background: linear-gradient(135deg, #4ECDC4 0%, #45B7E0 100%);
+    border-radius: 999px;
+    color: white;
+    font-size: 11px; font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 3px 8px rgba(78,205,196,0.3);
+  }
+
+  /* Main */
+  .main {
+    flex: 1; overflow-y: auto;
+    padding: 24px 32px 40px;
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+  }
+  .page { display: none; }
+  .page.active { display: block; animation: pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
+  @keyframes pop { from { opacity: 0; transform: scale(0.96) translateY(10px); } to { opacity: 1; transform: none; } }
+
+  /* Page nav pills */
+  .pagenav {
+    display: flex; gap: 8px;
+    margin-bottom: 24px;
+  }
+  .pagenav-item {
+    padding: 8px 18px;
+    border-radius: 999px;
+    font-size: 13px; font-weight: 500;
+    cursor: pointer;
+    color: var(--label-2);
+    background: rgba(255,255,255,0.5);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.4);
+  }
+  .pagenav-item:hover { background: white; }
+  .pagenav-item.active {
+    background: var(--label);
+    color: white;
+    border-color: var(--label);
+  }
+
+  /* Hero greeting */
+  .hero-h {
+    font-size: 36px; font-weight: 800; letter-spacing: -1px;
+    margin-bottom: 4px;
+    background: linear-gradient(135deg, #FF6B9D 0%, #A78BFA 100%);
+    -webkit-background-clip: text; background-clip: text;
+    color: transparent;
+  }
+  .hero-sub { font-size: 14px; color: var(--label-2); margin-bottom: 24px; }
+
+  /* Widgets */
+  .widgets {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr 1fr;
+    gap: 16px; margin-bottom: 32px;
+  }
+  .widget {
+    border-radius: 22px;
+    padding: 20px;
+    box-shadow: var(--shadow-lg);
+    color: white;
+    position: relative;
+    overflow: hidden;
+  }
+  .widget::before {
+    content: ""; position: absolute; top: -40%; right: -30%;
+    width: 80%; height: 180%;
+    background: radial-gradient(circle, rgba(255,255,255,0.3), transparent 70%);
+    pointer-events: none;
+  }
+  .w-clock {
+    background: linear-gradient(135deg, #667EEA 0%, #764BA2 100%);
+  }
+  .w-weather {
+    background: linear-gradient(135deg, #FF9A8B 0%, #FF6A88 50%, #FF99AC 100%);
+  }
+  .w-stats {
+    background: linear-gradient(135deg, #4ECDC4 0%, #45B7E0 100%);
+  }
+  .w-label {
+    font-size: 11px; font-weight: 700; opacity: 0.9;
+    text-transform: uppercase; letter-spacing: 0.8px;
+    margin-bottom: 12px;
+  }
+  .w-clock-time {
+    font-size: 60px; font-weight: 200; letter-spacing: -3px; line-height: 1;
+    font-feature-settings: "tnum";
+  }
+  .w-clock-date { font-size: 13px; opacity: 0.9; margin-top: 8px; }
+  .w-weather-temp { font-size: 48px; font-weight: 300; line-height: 1; }
+  .w-weather-row { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 4px; }
+  .w-weather-icon { font-size: 44px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.15)); }
+  .w-weather-cond { font-size: 12px; opacity: 0.95; margin-top: 4px; }
+  .w-stats-num { font-size: 48px; font-weight: 700; line-height: 1; letter-spacing: -1px; }
+  .w-stats-sub { font-size: 12px; opacity: 0.9; margin-top: 6px; }
+  .w-stats-rank { font-size: 11px; opacity: 0.8; margin-top: 12px; }
+
+  /* Search bar */
+  .search {
+    display: flex; gap: 10px;
+    padding: 6px 8px 6px 20px;
+    background: white;
+    border-radius: 999px;
+    margin-bottom: 32px;
+    box-shadow: var(--shadow);
+    align-items: center;
+  }
+  @media (prefers-color-scheme: dark) {
+    .search { background: rgba(255,255,255,0.1); }
+  }
+  .search input {
+    flex: 1; background: transparent;
+    border: none; outline: none;
+    font-size: 14px; color: inherit;
+    font-family: inherit;
+  }
+  .search input::placeholder { color: var(--label-3); }
+  .search-btn {
+    padding: 9px 22px;
+    background: linear-gradient(135deg, #667EEA 0%, #764BA2 100%);
+    color: white; border: none; border-radius: 999px;
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    box-shadow: 0 3px 10px rgba(102,126,234,0.4);
+  }
+
+  /* Categories with color tints */
+  .section-title {
+    font-size: 18px; font-weight: 700;
+    margin: 8px 0 14px; padding-left: 8px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .section-emoji {
+    width: 32px; height: 32px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+  }
+  .ent .section-emoji { background: linear-gradient(135deg, #FFE0EC 0%, #FFC1D9 100%); }
+  .tech .section-emoji { background: linear-gradient(135deg, #DBEAFE 0%, #BFDBFE 100%); }
+  .crypto .section-emoji { background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); }
+  .news .section-emoji { background: linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%); }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+  .card {
+    background: var(--bg-card);
+    backdrop-filter: blur(15px) saturate(180%);
+    border: 1px solid rgba(255,255,255,0.6);
+    border-radius: 18px;
+    padding: 16px 8px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+  }
+  @media (prefers-color-scheme: dark) {
+    .card { border-color: rgba(255,255,255,0.08); }
+  }
+  .card:hover {
+    transform: translateY(-6px) scale(1.05);
+    box-shadow: 0 12px 24px rgba(0,0,0,0.12);
+    background: white;
+  }
+  @media (prefers-color-scheme: dark) {
+    .card:hover { background: rgba(255,255,255,0.18); }
+  }
+  .card-logo {
+    width: 48px; height: 48px;
+    border-radius: 14px;
+    background: white;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+  }
+  .card-logo img { width: 30px; height: 30px; object-fit: contain; }
+  .card-name { font-size: 12px; font-weight: 600; }
+
+  /* History list */
+  .history-card {
+    background: var(--bg-card);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.6);
+    border-radius: 20px;
+    padding: 8px;
+    margin-bottom: 12px;
+  }
+  .history-day { padding: 12px 16px 6px; font-size: 12px; font-weight: 700; color: var(--label-3); text-transform: uppercase; letter-spacing: 0.5px; }
+  .history-row {
+    display: grid;
+    grid-template-columns: 40px 1fr auto;
+    align-items: center; gap: 12px;
+    padding: 10px 14px;
+    border-radius: 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .history-row:hover { background: rgba(255,255,255,0.7); transform: translateX(4px); }
+  @media (prefers-color-scheme: dark) {
+    .history-row:hover { background: rgba(255,255,255,0.1); }
+  }
+  .history-logo { width: 36px; height: 36px; border-radius: 10px; background: white; display: flex; align-items: center; justify-content: center; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+  .history-logo img { width: 22px; height: 22px; }
+  .history-title { font-size: 14px; font-weight: 600; }
+  .history-url { font-size: 11px; color: var(--label-3); margin-top: 2px; font-family: ui-monospace, monospace; }
+  .history-time {
+    font-size: 11px; color: var(--label-2);
+    padding: 4px 10px; border-radius: 999px;
+    background: rgba(255,255,255,0.6);
+  }
+  @media (prefers-color-scheme: dark) {
+    .history-time { background: rgba(255,255,255,0.1); }
+  }
+
+  /* About cards */
+  .about-card {
+    background: var(--bg-card);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.6);
+    border-radius: 22px;
+    padding: 24px;
+    margin-bottom: 14px;
+    box-shadow: var(--shadow);
+  }
+  .about-h {
+    font-size: 18px; font-weight: 700;
+    margin-bottom: 8px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .about-text { font-size: 14px; line-height: 1.7; color: var(--label-2); }
+  .kbd {
+    display: inline-block; padding: 2px 9px;
+    background: rgba(255,255,255,0.7);
+    border: 1px solid rgba(0,0,0,0.06);
+    border-radius: 7px;
+    font-family: ui-monospace, monospace;
+    font-size: 12px; margin: 0 1px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  }
+  @media (prefers-color-scheme: dark) {
+    .kbd { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.15); }
+  }
+
+  /* Window Manager preview */
+  .window-card {
+    display: grid;
+    grid-template-columns: 32px 1fr auto auto;
+    align-items: center; gap: 12px;
+    padding: 12px 16px;
+    background: rgba(255,255,255,0.5);
+    border-radius: 14px;
+    margin-bottom: 8px;
+    cursor: pointer;
+  }
+  .window-card:hover { background: white; }
+  .win-icon { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+  .win-icon.work { background: linear-gradient(135deg, #1c1c1e, #3a3a3c); color: white; }
+  .win-icon.slack { background: linear-gradient(135deg, #FF6B9D, #A78BFA); color: white; }
+  .win-name { font-size: 13px; font-weight: 600; }
+  .win-meta { font-size: 11px; color: var(--label-3); margin-top: 2px; font-family: ui-monospace, monospace; }
+  .win-tabs-count {
+    padding: 3px 10px; border-radius: 999px;
+    background: rgba(0,0,0,0.06);
+    font-size: 11px; font-weight: 600;
+    font-family: ui-monospace, monospace;
+  }
+</style>
+</head>
+<body>
+
+<div class="frame">
+
+  <!-- Tabs -->
+  <div class="titlebar">
+    <div class="tabs">
+      <div class="tab active">
+        <img src="https://cdn.simpleicons.org/bilibili/00A1D6">
+        <span class="tab-title">哔哩哔哩</span>
+        <div class="tab-close">×</div>
+      </div>
+      <div class="tab">
+        <img src="https://cdn.simpleicons.org/youtube/FF0000">
+        <span class="tab-title">YouTube</span>
+        <div class="tab-close">×</div>
+      </div>
+      <div class="tab">
+        <img src="https://cdn.simpleicons.org/x/000000">
+        <span class="tab-title">X / Twitter</span>
+        <div class="tab-close">×</div>
+      </div>
+      <div class="tab-add">+</div>
+    </div>
+    <div class="titlebar-right">
+      <div class="mode-toggle">
+        <span class="dot"></span>
+        <span>SLACK 摸鱼</span>
+      </div>
+      <div class="icon-btn" title="新窗口">⊕</div>
+      <div class="icon-btn" title="设置">⚙</div>
+    </div>
+  </div>
+
+  <!-- Address bar -->
+  <div class="addrbar">
+    <div class="nav-icon">←</div>
+    <div class="nav-icon">→</div>
+    <div class="nav-icon">↻</div>
+    <div class="nav-icon">⌂</div>
+    <input class="url-pill" value="https://www.bilibili.com/" />
+    <div class="proxy-pill">🌐 直连</div>
+  </div>
+
+  <!-- Main -->
+  <div class="main">
+
+    <div class="pagenav">
+      <div class="pagenav-item active" onclick="go(this,'home')">🏠 首页</div>
+      <div class="pagenav-item" onclick="go(this,'history')">⏱ 历史</div>
+      <div class="pagenav-item" onclick="go(this,'settings')">⚙ 设置</div>
+      <div class="pagenav-item" onclick="go(this,'about')">ℹ 关于</div>
+    </div>
+
+    <!-- HOME -->
+    <div class="page active" id="home">
+      <div class="hero-h">嗨～ 摸鱼时间到</div>
+      <div class="hero-sub">v1.3.0 · 摸鱼模式 · 数据本地存储 7 天自动清理</div>
+
+      <div class="widgets">
+        <div class="widget w-clock">
+          <div class="w-label">现在时间</div>
+          <div class="w-clock-time" id="clock">14:32</div>
+          <div class="w-clock-date">2026年4月27日 · 星期一 · 农历三月十一</div>
+        </div>
+        <div class="widget w-weather">
+          <div class="w-label">📍 深圳</div>
+          <div class="w-weather-row">
+            <div>
+              <div class="w-weather-temp">22°</div>
+              <div class="w-weather-cond">晴朗 · 微风</div>
+            </div>
+            <div class="w-weather-icon">☀️</div>
+          </div>
+        </div>
+        <div class="widget w-stats">
+          <div class="w-label">本周摸鱼</div>
+          <div class="w-stats-num">47<span style="font-size:24px;font-weight:400;">次</span></div>
+          <div class="w-stats-sub">↑ 比上周多 12%</div>
+          <div class="w-stats-rank">最爱：哔哩哔哩 12 次</div>
+        </div>
+      </div>
+
+      <div class="search">
+        <span style="font-size:16px;">🔍</span>
+        <input placeholder="想看点啥？输入网址或关键词，回车～" />
+        <button class="search-btn">搜索</button>
+      </div>
+
+      <div class="ent">
+        <div class="section-title">
+          <span class="section-emoji">📺</span>
+          <span>娱乐区</span>
+        </div>
+        <div class="grid">
+          <div class="card"><div class="card-logo"><img src="https://cdn.simpleicons.org/bilibili/00A1D6"></div><div class="card-name">哔哩哔哩</div></div>
+          <div class="card"><div class="card-logo"><img src="https://cdn.simpleicons.org/youtube/FF0000"></div><div class="card-name">YouTube</div></div>
+          <div class="card"><div class="card-logo"><img src="https://cdn.simpleicons.org/tiktok/000000"></div><div class="card-name">抖音</div></div>
+          <div class="card"><div class="card-logo"><img src="https://icons.duckduckgo.com/ip3/xiaohongshu.com.ico"></div><div class="card-name">小红书</div></div>
+          <div class="card"><div class="card-logo"><img src="https://cdn.simpleicons.org/sinaweibo/E6162D"></div><div class="card-name">微博</div></div>
+          <div class="card"><div class="card-logo"><img src="https://cdn.simpleicons.org/x/000000"></div><div class="card-name">X</div></div>
+          <div class="card"><div class="card-logo"><img src="https://cdn.simpleicons.org/instagram/E4405F"></div><div class="card-name">Instagram</div></div>
+          <div class="card"><div class="card-logo"><img src="https://cdn.simpleicons.org/netflix/E50914"></div><div class="card-name">Netflix</div></div>
+          <div class="card"><div class="card-logo"><img src="https://cdn.simpleicons.org/reddit/FF4500"></div><div class="card-name">Reddit</div></div>
+          <div class="card"><div class="card-logo"><img src="https://cdn.simpleicons.org/spotify/1DB954"></div><div class="card-name">Spotify</div></div>
+        </div>
+      </div>
+
+      <div class="tech">
+        <div class="section-title">
+          <span class="section-emoji">💻</span>
+          <span>技术区</span>
+        </div>
+        <div class="grid">
+          <div class="card"><div class="card-logo"><img src="https://cdn.simpleicons.org/github/181717"></div><div class="card-name">GitHub</div></div>
+          <div class="card"><div class="card-logo"><img src="https://cdn.simpleicons.org/stackoverflow/F58025"></div><div class="card-name">StackOverflow</div></div>
+          <div class="card"><div class="card-logo"><img src="https://icons.duckduckgo.com/ip3/juejin.cn.ico"></div><div class="card-name">掘金</div></div>
+          <div class="card"><div class="card-logo"><img src="https://icons.duckduckgo.com/ip3/v2ex.com.ico"></div><div class="card-name">V2EX</div></div>
+          <div class="card"><div class="card-logo"><img src="https://cdn.simpleicons.org/ycombinator/FF6600"></div><div class="card-name">HackerNews</div></div>
+          <div class="card"><div class="card-logo"><img src="https://cdn.simpleicons.org/zhihu/0084FF"></div><div class="card-name">知乎</div></div>
+          <div class="card"><div class="card-logo"><img src="https://cdn.simpleicons.org/openai/412991"></div><div class="card-name">ChatGPT</div></div>
+        </div>
+      </div>
+
+      <div class="crypto">
+        <div class="section-title">
+          <span class="section-emoji">💰</span>
+          <span>炒币区</span>
+        </div>
+        <div class="grid">
+          <div class="card"><div class="card-logo"><img src="https://cdn.simpleicons.org/binance/F0B90B"></div><div class="card-name">币安</div></div>
+          <div class="card"><div class="card-logo"><img src="https://icons.duckduckgo.com/ip3/okx.com.ico"></div><div class="card-name">OKX</div></div>
+          <div class="card"><div class="card-logo"><img src="https://cdn.simpleicons.org/coinmarketcap/17181B"></div><div class="card-name">CMC</div></div>
+          <div class="card"><div class="card-logo"><img src="https://cdn.simpleicons.org/tradingview/2962FF"></div><div class="card-name">TradingView</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- HISTORY -->
+    <div class="page" id="history">
+      <div class="hero-h">最近浏览</div>
+      <div class="hero-sub">最近 7 天 · 自动清理 · 全部本地</div>
+
+      <div class="history-card">
+        <div class="history-day">⏰ 今天</div>
+        <div class="history-row">
+          <div class="history-logo"><img src="https://cdn.simpleicons.org/github/181717"></div>
+          <div><div class="history-title">GitHub</div><div class="history-url">github.com/orgs/anthropics</div></div>
+          <div class="history-time">2 分钟前</div>
+        </div>
+        <div class="history-row">
+          <div class="history-logo"><img src="https://cdn.simpleicons.org/bilibili/00A1D6"></div>
+          <div><div class="history-title">哔哩哔哩</div><div class="history-url">m.bilibili.com</div></div>
+          <div class="history-time">15 分钟前</div>
+        </div>
+        <div class="history-row">
+          <div class="history-logo"><img src="https://cdn.simpleicons.org/openai/412991"></div>
+          <div><div class="history-title">ChatGPT</div><div class="history-url">chat.openai.com</div></div>
+          <div class="history-time">1 小时前</div>
+        </div>
+      </div>
+
+      <div class="history-card">
+        <div class="history-day">📅 昨天</div>
+        <div class="history-row">
+          <div class="history-logo"><img src="https://icons.duckduckgo.com/ip3/xiaohongshu.com.ico"></div>
+          <div><div class="history-title">小红书</div><div class="history-url">xiaohongshu.com</div></div>
+          <div class="history-time">18:24</div>
+        </div>
+        <div class="history-row">
+          <div class="history-logo"><img src="https://cdn.simpleicons.org/coinmarketcap/17181B"></div>
+          <div><div class="history-title">CoinMarketCap</div><div class="history-url">coinmarketcap.com</div></div>
+          <div class="history-time">14:01</div>
+        </div>
+      </div>
+
+      <div class="history-card">
+        <div class="history-day">📆 2 天前</div>
+        <div class="history-row">
+          <div class="history-logo"><img src="https://icons.duckduckgo.com/ip3/36kr.com.ico"></div>
+          <div><div class="history-title">36Kr</div><div class="history-url">36kr.com</div></div>
+          <div class="history-time">10:14</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="page" id="settings">
+      <div class="hero-h">设置</div>
+      <div class="hero-sub">每个窗口可以独立配置，互不影响 ✨</div>
+
+      <div class="about-card">
+        <div class="about-h">🌐 当前窗口代理</div>
+        <div class="about-text" style="margin-bottom:16px;">每个窗口可独立设置代理。一个窗口走 VPN 看 GitHub，另一个直连看 B 站，互不干扰。</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
+          <div style="padding:8px 14px;border-radius:999px;background:linear-gradient(135deg, #4ECDC4, #45B7E0);color:white;font-size:12px;font-weight:600;cursor:pointer;">✓ 直连（本地网络）</div>
+          <div style="padding:8px 14px;border-radius:999px;background:rgba(255,255,255,0.6);font-size:12px;cursor:pointer;">系统代理</div>
+          <div style="padding:8px 14px;border-radius:999px;background:rgba(255,255,255,0.6);font-size:12px;cursor:pointer;">自定义</div>
+          <div style="padding:8px 14px;border-radius:999px;background:rgba(255,255,255,0.6);font-size:12px;cursor:pointer;">无痕模式</div>
+        </div>
+        <div style="font-size:12px;color:var(--label-3);">💡 <strong>提示</strong>：自定义代理可绕开系统级 VPN（macOS 14+），让本窗口的所有流量走本地直连或独立代理。</div>
+      </div>
+
+      <div class="about-card">
+        <div class="about-h">🪟 多窗口管理</div>
+        <div class="about-text" style="margin-bottom:14px;">每个窗口独立 Cookie / 缓存 / 代理，可以同时开很多个</div>
+        <div class="window-card">
+          <div class="win-icon work">⌥</div>
+          <div><div class="win-name">w1 工作窗口</div><div class="win-meta">SOCKS5 :7890 · GitHub, ChatGPT</div></div>
+          <div class="win-tabs-count">3 tabs</div>
+          <div style="font-size:11px;color:var(--label-3);">当前</div>
+        </div>
+        <div class="window-card">
+          <div class="win-icon slack">🐟</div>
+          <div><div class="win-name">w2 摸鱼窗口</div><div class="win-meta">直连 · B站, 抖音, 小红书</div></div>
+          <div class="win-tabs-count">3 tabs</div>
+          <div style="font-size:11px;color:var(--label-3);">后台</div>
+        </div>
+        <button class="search-btn" style="margin-top:8px;padding:10px 18px;">⊕ 新建窗口</button>
+      </div>
+    </div>
+
+    <!-- ABOUT -->
+    <div class="page" id="about">
+      <div class="hero-h">🐟 Minbar</div>
+      <div class="hero-sub">摸鱼浏览器 v1.3.0 · 2026.04 · macOS 11+ Apple Silicon</div>
+
+      <div class="about-card">
+        <div class="about-h">🎯 开发目的</div>
+        <div class="about-text">
+          工作间隙偷得浮生半日闲。常驻菜单栏的小浮窗浏览器。<br><br>
+          支持<b>多 Tab</b>同时刷多个站，支持<b>多窗口独立代理</b>——<br>
+          一个窗口走 VPN 看 GitHub，另一个走直连刷 B 站，互不干扰。<br><br>
+          <b>工作模式</b>专业冷静，<b>摸鱼模式</b>彩色玩乐。<br>
+          数据全部本地存储，无云同步无追踪。
+        </div>
+      </div>
+
+      <div class="about-card">
+        <div class="about-h">⌨️ 快捷键</div>
+        <div class="about-text">
+          <div><span class="kbd">⌥</span><span class="kbd">~</span> 显示 / 隐藏当前窗口</div>
+          <div style="margin-top:8px;"><span class="kbd">⌘</span><span class="kbd">T</span> 新标签页</div>
+          <div style="margin-top:8px;"><span class="kbd">⌘</span><span class="kbd">⇧</span><span class="kbd">N</span> 新窗口（独立代理）</div>
+          <div style="margin-top:8px;"><span class="kbd">⌘</span><span class="kbd">L</span> 聚焦地址栏</div>
+          <div style="margin-top:8px;"><span class="kbd">⌘</span><span class="kbd">⌥</span><span class="kbd">Q</span> 退出 App</div>
+          <div style="margin-top:8px;">双击窗口 · 切换大小</div>
+        </div>
+      </div>
+
+      <div class="about-card">
+        <div class="about-h">📂 数据存储（独立目录）</div>
+        <div class="about-text">
+          <span class="kbd">~/.minbar/config.json</span> 用户配置<br><br>
+          <span class="kbd">~/.minbar-data/history.json</span> 浏览历史，7 天自动清理<br><br>
+          <span class="kbd">~/.minbar-data/webdata/{w1, w2, ...}/</span> 每个窗口独立 Cookie / Cache，与 Safari 完全隔离
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function go(el, id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.pagenav-item').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (el) el.classList.add('active');
+}
+function tickClock() {
+  const n = new Date();
+  document.getElementById('clock').textContent =
+    `${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}`;
+}
+tickClock(); setInterval(tickClock, 30000);
+</script>
+</body>
+</html>

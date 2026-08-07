@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Minbar · 启动器（工作区列表）</title>
+<style>
+  :root {
+    --label:    #1d1d1f;
+    --label-2:  #424245;
+    --label-3:  #6e6e73;
+    --label-4:  #86868b;
+    --bg:       #f5f5f7;
+    --bg-elev:  #ffffff;
+    --bg-sec:   #fafafa;
+    --sep:      rgba(0,0,0,0.06);
+    --hairline: rgba(0,0,0,0.08);
+    --fill-1:   rgba(0,0,0,0.04);
+    --fill-2:   rgba(0,0,0,0.08);
+    --blue:     #0071e3;
+    --blue-bg:  rgba(0,113,227,0.10);
+    --green:    #34c759;
+    --green-bg: rgba(52,199,89,0.12);
+    --orange:   #ff9500;
+    --pink:     #ff2d55;
+    --purple:   #af52de;
+    --red:      #ff3b30;
+    --shadow-sm: 0 0.5px 1px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 0.5px 1px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.06);
+    --shadow-lg: 0 0.5px 1px rgba(0,0,0,0.08), 0 12px 32px rgba(0,0,0,0.08);
+    --shadow-xl: 0 0.5px 1px rgba(0,0,0,0.10), 0 24px 64px rgba(0,0,0,0.12);
+    --r-sm: 6px;
+    --r-md: 10px;
+    --r-lg: 14px;
+    --r-xl: 20px;
+    --ease: cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --label: #f5f5f7;
+      --label-2: #d1d1d6;
+      --label-3: #98989d;
+      --label-4: #636366;
+      --bg: #1d1d1f;
+      --bg-elev: #2c2c2e;
+      --bg-sec: #1c1c1e;
+      --sep: rgba(255,255,255,0.06);
+      --hairline: rgba(255,255,255,0.10);
+      --fill-1: rgba(255,255,255,0.06);
+      --fill-2: rgba(255,255,255,0.10);
+      --blue: #0a84ff;
+      --blue-bg: rgba(10,132,255,0.18);
+      --green: #30d158;
+      --green-bg: rgba(48,209,88,0.18);
+      --shadow-sm: 0 0.5px 1px rgba(0,0,0,0.5), 0 1px 2px rgba(0,0,0,0.3);
+      --shadow-md: 0 0.5px 1px rgba(0,0,0,0.5), 0 4px 12px rgba(0,0,0,0.4);
+      --shadow-xl: 0 0.5px 1px rgba(0,0,0,0.5), 0 24px 64px rgba(0,0,0,0.5);
+    }
+  }
+
+  *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "PingFang SC", sans-serif;
+    background: linear-gradient(135deg, #c5d8e8 0%, #ddc8e0 50%, #f0d8c4 100%);
+    color: var(--label);
+    -webkit-font-smoothing: antialiased;
+    -webkit-user-select: none;
+    font-size: 13px;
+    line-height: 1.5;
+    min-height: 100vh;
+    padding: 60px 20px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  @media (prefers-color-scheme: dark) {
+    body {
+      background: linear-gradient(135deg, #1a2238 0%, #2a1845 50%, #3a1f1c 100%);
+    }
+  }
+
+  /* ───── Launcher Window ───── */
+  .launcher {
+    width: 720px;
+    background: var(--bg-elev);
+    border-radius: 18px;
+    box-shadow: var(--shadow-xl);
+    border: 0.5px solid var(--hairline);
+    overflow: hidden;
+  }
+
+  /* Window chrome */
+  .titlebar {
+    height: 38px;
+    background: var(--bg-sec);
+    border-bottom: 0.5px solid var(--sep);
+    display: flex; align-items: center;
+    padding: 0 14px;
+    position: relative;
+  }
+  .traffic { display: flex; gap: 8px; }
+  .traffic-light { width: 12px; height: 12px; border-radius: 50%; }
+  .traffic-r { background: #ff5f57; }
+  .traffic-y { background: #febc2e; }
+  .traffic-g { background: #28c840; }
+  .titlebar-title {
+    position: absolute; left: 50%; transform: translateX(-50%);
+    font-size: 13px; font-weight: 600;
+  }
+
+  /* Header */
+  .header {
+    padding: 28px 32px 24px;
+    border-bottom: 0.5px solid var(--sep);
+    display: flex; justify-content: space-between; align-items: flex-start;
+  }
+  .header-left { display: flex; align-items: center; gap: 14px; }
+  .brand-mark {
+    width: 48px; height: 48px;
+    background: linear-gradient(135deg, #007AFF 0%, #5AC8FA 100%);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px;
+    box-shadow: 0 4px 10px rgba(0,113,227,0.3);
+  }
+  .header-title { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+  .header-sub { font-size: 12px; color: var(--label-3); margin-top: 3px; }
+  .header-action {
+    display: flex; align-items: center; gap: 6px;
+    padding: 7px 14px;
+    background: var(--blue);
+    color: white;
+    border-radius: 8px;
+    font-size: 12px; font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0,113,227,0.3);
+  }
+  .header-action:hover { background: #0062c6; }
+
+  /* Profile list */
+  .list {
+    padding: 16px 24px 24px;
+    background: var(--bg-sec);
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+
+  .profile {
+    display: grid;
+    grid-template-columns: 56px 1fr auto;
+    align-items: center; gap: 16px;
+    padding: 16px 18px;
+    margin-bottom: 10px;
+    background: var(--bg-elev);
+    border-radius: var(--r-lg);
+    border: 0.5px solid var(--hairline);
+    box-shadow: var(--shadow-sm);
+    transition: all 0.15s var(--ease);
+  }
+  .profile:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+  }
+
+  /* Avatar */
+  .avatar {
+    width: 48px; height: 48px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px;
+    color: white;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  }
+  .avatar.fun { background: linear-gradient(135deg, #FF6B9D 0%, #FFA94D 100%); }
+  .avatar.work { background: linear-gradient(135deg, #2563eb 0%, #06b6d4 100%); }
+  .avatar.crypto { background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%); }
+  .avatar.news { background: linear-gradient(135deg, #10b981 0%, #14b8a6 100%); }
+
+  /* Profile info */
+  .info { min-width: 0; }
+  .info-line-1 {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 6px;
+  }
+  .info-name {
+    font-size: 16px; font-weight: 700;
+    letter-spacing: -0.2px;
+  }
+  .mode-pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 9px;
+    border-radius: 999px;
+    font-size: 10px; font-weight: 600;
+    line-height: 1.4;
+  }
+  .mode-pill.work {
+    background: rgba(0,113,227,0.12);
+    color: var(--blue);
+  }
+  .mode-pill.slack {
+    background: rgba(255,45,85,0.12);
+    color: var(--pink);
+  }
+  .info-note {
+    font-size: 12px; color: var(--label-3);
+    margin-bottom: 8px;
+  }
+
+  /* Inline proxy config */
+  .proxy-row {
+    display: flex; align-items: center; gap: 6px;
+    flex-wrap: wrap;
+  }
+  .proxy-label {
+    font-size: 11px; color: var(--label-3);
+    font-weight: 500;
+  }
+  .proxy-select {
+    appearance: none;
+    -webkit-appearance: none;
+    padding: 4px 22px 4px 10px;
+    background: var(--fill-1) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path fill='%23999' d='M5 6L0 0h10z'/></svg>") no-repeat right 8px center;
+    border: 0.5px solid var(--hairline);
+    border-radius: 6px;
+    font-size: 11px;
+    color: var(--label);
+    font-family: ui-monospace, "SF Mono", monospace;
+    cursor: pointer;
+    outline: none;
+  }
+  .proxy-select:hover { background-color: var(--fill-2); }
+  .proxy-input {
+    padding: 4px 8px;
+    background: var(--fill-1);
+    border: 0.5px solid var(--hairline);
+    border-radius: 6px;
+    font-size: 11px;
+    color: var(--label);
+    font-family: ui-monospace, monospace;
+    outline: none;
+    width: 110px;
+  }
+  .proxy-input.port { width: 56px; }
+  .proxy-input:focus {
+    border-color: var(--blue);
+    background: var(--bg-elev);
+  }
+  .proxy-status {
+    display: flex; align-items: center; gap: 4px;
+    font-size: 10px;
+    color: var(--green);
+    font-family: ui-monospace, monospace;
+    padding: 2px 8px;
+    background: var(--green-bg);
+    border-radius: 999px;
+  }
+  .proxy-status-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--green);
+  }
+  .proxy-status.warn {
+    color: var(--orange);
+    background: rgba(255,149,0,0.12);
+  }
+  .proxy-status.warn .proxy-status-dot { background: var(--orange); }
+
+  /* Direct mode = no input */
+  .proxy-row.direct {
+    color: var(--label-3);
+  }
+
+  /* Action buttons */
+  .actions {
+    display: flex; align-items: center; gap: 6px;
+  }
+  .btn {
+    border: none;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    display: flex; align-items: center; gap: 6px;
+    transition: all 0.12s;
+  }
+  .btn-edit {
+    background: var(--fill-1);
+    color: var(--label-2);
+  }
+  .btn-edit:hover { background: var(--fill-2); }
+  .btn-launch {
+    background: var(--blue);
+    color: white;
+    box-shadow: 0 1px 2px rgba(0,113,227,0.25);
+  }
+  .btn-launch:hover { background: #0062c6; transform: translateY(-1px); }
+  .btn-launch:active { transform: translateY(0); }
+
+  /* "Add new" tile */
+  .add-tile {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 18px 18px;
+    border: 1.5px dashed var(--label-4);
+    border-radius: var(--r-lg);
+    color: var(--label-3);
+    cursor: pointer;
+    font-size: 13px; font-weight: 500;
+    transition: all 0.15s;
+    background: transparent;
+  }
+  .add-tile:hover {
+    border-color: var(--blue);
+    color: var(--blue);
+    background: var(--blue-bg);
+  }
+  .add-tile-icon {
+    width: 22px; height: 22px;
+    border-radius: 50%; background: var(--fill-1);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+  }
+
+  /* Footer */
+  .footer {
+    padding: 14px 24px;
+    background: var(--bg-elev);
+    border-top: 0.5px solid var(--sep);
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 11px;
+    color: var(--label-3);
+  }
+  .footer-left { display: flex; align-items: center; gap: 10px; }
+  .footer-link {
+    color: var(--blue);
+    cursor: pointer;
+  }
+  .footer-link:hover { text-decoration: underline; }
+
+  /* Annotation */
+  .anno {
+    position: absolute;
+    background: var(--label);
+    color: white;
+    padding: 5px 9px;
+    border-radius: 5px;
+    font-size: 10px;
+    font-weight: 500;
+    box-shadow: var(--shadow-md);
+    white-space: nowrap;
+    z-index: 10;
+  }
+  .anno::after {
+    content: ""; position: absolute;
+    width: 0; height: 0;
+    border-style: solid;
+  }
+
+  /* Bottom note about flow */
+  .flow-note {
+    margin-top: 32px;
+    max-width: 720px;
+    background: var(--bg-elev);
+    border-radius: var(--r-lg);
+    padding: 18px 22px;
+    border: 0.5px solid var(--hairline);
+    box-shadow: var(--shadow-sm);
+    display: grid;
+    grid-template-columns: 24px 1fr;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .flow-note-icon {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: var(--blue);
+    color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700;
+  }
+  .flow-note-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+  .flow-note-text { font-size: 12px; color: var(--label-2); line-height: 1.6; }
+  .kbd {
+    display: inline-block; padding: 1px 6px;
+    border: 0.5px solid var(--hairline);
+    border-radius: 4px;
+    background: var(--fill-1);
+    font-family: ui-monospace, "SF Mono", monospace;
+    font-size: 10px;
+  }
+</style>
+</head>
+<body>
+
+<div style="display:flex;flex-direction:column;align-items:center;">
+
+  <div class="launcher">
+    <!-- Window chrome -->
+    <div class="titlebar">
+      <div class="traffic">
+        <div class="traffic-light traffic-r"></div>
+        <div class="traffic-light traffic-y"></div>
+        <div class="traffic-light traffic-g"></div>
+      </div>
+      <div class="titlebar-title">Minbar — 工作区</div>
+    </div>
+
+    <!-- Header -->
+    <div class="header">
+      <div class="header-left">
+        <div class="brand-mark">🐟</div>
+        <div>
+          <div class="header-title">选个工作区</div>
+          <div class="header-sub">每个工作区独立 Cookie / 缓存 / 代理 · 数据本地存储</div>
+        </div>
+      </div>
+      <div class="header-action">
+        <span style="font-size:14px;">＋</span>
+        <span>新建工作区</span>
+      </div>
+    </div>
+
+    <!-- Profile list -->
+    <div class="list">
+
+      <!-- Profile 1: 娱乐 -->
+      <div class="profile">
+        <div class="avatar fun">🎮</div>
+        <div class="info">
+          <div class="info-line-1">
+            <div class="info-name">娱乐</div>
+            <div class="mode-pill slack">🌈 摸鱼模式</div>
+          </div>
+          <div class="info-note">摸鱼时用 · 隐蔽性优先 · 默认小窗</div>
+          <div class="proxy-row direct">
+            <span class="proxy-label">代理</span>
+            <select class="proxy-select">
+              <option selected>直连（本地网络）</option>
+              <option>系统代理</option>
+              <option>HTTP</option>
+              <option>SOCKS5</option>
+            </select>
+            <span class="proxy-status"><span class="proxy-status-dot"></span> 本地直连</span>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn btn-edit">⚙ 编辑</button>
+          <button class="btn btn-launch">▶ 开启</button>
+        </div>
+      </div>
+
+      <!-- Profile 2: 工作 -->
+      <div class="profile">
+        <div class="avatar work">💻</div>
+        <div class="info">
+          <div class="info-line-1">
+            <div class="info-name">工作</div>
+            <div class="mode-pill work">⚒️ 工作模式</div>
+          </div>
+          <div class="info-note">公司项目 · 多 Tab + 拆离小窗 · 走 V2Ray</div>
+          <div class="proxy-row">
+            <span class="proxy-label">代理</span>
+            <select class="proxy-select">
+              <option>直连</option>
+              <option>系统代理</option>
+              <option>HTTP</option>
+              <option selected>SOCKS5</option>
+            </select>
+            <input class="proxy-input" value="127.0.0.1" />
+            <span style="color:var(--label-4);font-size:11px;">:</span>
+            <input class="proxy-input port" value="1087" />
+            <span class="proxy-status"><span class="proxy-status-dot"></span> 142 ms</span>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn btn-edit">⚙ 编辑</button>
+          <button class="btn btn-launch">▶ 开启</button>
+        </div>
+      </div>
+
+      <!-- Profile 3: 炒币 -->
+      <div class="profile">
+        <div class="avatar crypto">📈</div>
+        <div class="info">
+          <div class="info-line-1">
+            <div class="info-name">炒币</div>
+            <div class="mode-pill work">⚒️ 工作模式</div>
+          </div>
+          <div class="info-note">币安 / OKX / TradingView · 走机场代理</div>
+          <div class="proxy-row">
+            <span class="proxy-label">代理</span>
+            <select class="proxy-select">
+              <option>直连</option>
+              <option>系统代理</option>
+              <option selected>HTTP</option>
+              <option>SOCKS5</option>
+            </select>
+            <input class="proxy-input" value="127.0.0.1" />
+            <span style="color:var(--label-4);font-size:11px;">:</span>
+            <input class="proxy-input port" value="7890" />
+            <span class="proxy-status warn"><span class="proxy-status-dot"></span> 测试中…</span>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn btn-edit">⚙ 编辑</button>
+          <button class="btn btn-launch">▶ 开启</button>
+        </div>
+      </div>
+
+      <!-- Profile 4: 阅读 -->
+      <div class="profile">
+        <div class="avatar news">📰</div>
+        <div class="info">
+          <div class="info-line-1">
+            <div class="info-name">阅读</div>
+            <div class="mode-pill slack">🌈 摸鱼模式</div>
+          </div>
+          <div class="info-note">知乎 / 36Kr / V2EX · 上班划水</div>
+          <div class="proxy-row direct">
+            <span class="proxy-label">代理</span>
+            <select class="proxy-select">
+              <option selected>直连（本地网络）</option>
+              <option>系统代理</option>
+              <option>HTTP</option>
+              <option>SOCKS5</option>
+            </select>
+            <span class="proxy-status"><span class="proxy-status-dot"></span> 本地直连</span>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn btn-edit">⚙ 编辑</button>
+          <button class="btn btn-launch">▶ 开启</button>
+        </div>
+      </div>
+
+      <!-- Add tile -->
+      <div class="add-tile">
+        <span class="add-tile-icon">＋</span>
+        <span>新建工作区</span>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <div class="footer-left">
+        <span>📂 ~/.minbar/profiles.json</span>
+        <span>·</span>
+        <span>🛡 数据本地，无云同步</span>
+      </div>
+      <div class="footer-left">
+        <span class="footer-link">⚙ 全局设置</span>
+        <span>·</span>
+        <span class="footer-link">ⓘ 关于</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Flow note -->
+  <div class="flow-note">
+    <div class="flow-note-icon">i</div>
+    <div>
+      <div class="flow-note-title">使用流程</div>
+      <div class="flow-note-text">
+        点 <span class="kbd">▶ 开启</span> 后，按工作区配置打开浏览器窗口（独立 Cookie + 独立代理 + 对应模式）。<br>
+        多个工作区可以同时打开，互不干扰：可以一边走 SOCKS5 代理刷 GitHub，一边直连看 B 站。<br>
+        点 <span class="kbd">⚙ 编辑</span> 修改备注 / 代理 / 模式 / 默认尺寸 / 启动 URL · 改完立即生效，不重启。<br>
+        快捷键：<span class="kbd">⌥</span><span class="kbd">~</span> 显示 / 隐藏当前活动窗口 · <span class="kbd">⌘</span><span class="kbd">⌥</span><span class="kbd">L</span> 回到此启动器。
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

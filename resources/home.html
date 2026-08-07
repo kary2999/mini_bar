@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1180">
+<title>Meowser 摸鱼导航</title>
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", sans-serif;
+    background: linear-gradient(135deg, #f5f7fa 0%, #e9eef5 100%);
+    color: #1d1d1f;
+    padding: 28px 36px 40px;
+    -webkit-user-select: none;
+  }
+  /* 强制白天模式 — 不跟随系统 */
+
+  .header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 22px;
+  }
+  h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; }
+  .subtitle { font-size: 12px; color: #8e8e93; margin-top: 2px; }
+
+  .search-bar {
+    display: flex; gap: 8px; margin-bottom: 32px;
+  }
+  .search-input {
+    flex: 1; padding: 12px 16px;
+    border-radius: 10px; border: 1px solid #d2d2d7;
+    font-size: 14px; outline: none;
+    background: white; color: #1d1d1f;
+    transition: all 0.15s;
+  }
+  .search-input:focus {
+    border-color: #007aff;
+    box-shadow: 0 0 0 3px rgba(0,122,255,0.15);
+  }
+  .search-btn {
+    padding: 12px 22px; border: none; border-radius: 10px;
+    background: #007aff; color: white; cursor: pointer;
+    font-size: 14px; font-weight: 600;
+    transition: all 0.15s;
+  }
+  .search-btn:hover { background: #0062cc; }
+  .search-btn:active { transform: scale(0.97); }
+
+  .category { margin-bottom: 28px; }
+  .category-title {
+    font-size: 13px; font-weight: 600;
+    color: #6e6e73; margin-bottom: 12px;
+    display: flex; align-items: center; gap: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .category-title .emoji { font-size: 16px; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+    gap: 12px;
+  }
+  .card {
+    background: white;
+    border-radius: 14px;
+    padding: 16px 8px;
+    text-align: center;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.18s ease;
+    border: 1px solid #e5e5ea;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+  .card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+    border-color: rgba(0,122,255,0.3);
+  }
+  .card:active { transform: translateY(-1px); }
+  .card-icon {
+    font-size: 28px;
+    line-height: 1;
+    width: 44px; height: 44px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 10px;
+  }
+  .card-name {
+    font-size: 12px; font-weight: 500;
+    color: #1d1d1f !important;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+  }
+  /* 禁止白字 */
+  .card { color: #1d1d1f !important; }
+  h1, .category-title, .subtitle { color: #1d1d1f; }
+  .subtitle { color: #6e6e73 !important; }
+  .category-title { color: #6e6e73 !important; }
+
+  /* tip */
+  .tip {
+    text-align: center; color: #8e8e93;
+    font-size: 11px; margin-top: 24px;
+  }
+</style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h1>🐟 摸鱼时间</h1>
+      <div class="subtitle">Tip: 双击窗口缩回小窗 / ⌥~ 显隐</div>
+    </div>
+  </div>
+
+  <form class="search-bar" onsubmit="doSearch(event)">
+    <input class="search-input" id="q" type="text" placeholder="输入网址或搜索关键词，回车直达..." autocomplete="off">
+    <button class="search-btn" type="submit">搜索</button>
+  </form>
+
+  <!-- 娱乐区 -->
+  <div class="category">
+    <div class="category-title"><span class="emoji">📺</span> 娱乐区</div>
+    <div class="grid">
+      <a class="card" href="https://m.bilibili.com"><span class="card-icon">📺</span><span class="card-name">B站</span></a>
+      <a class="card" href="https://www.youtube.com"><span class="card-icon">▶️</span><span class="card-name">YouTube</span></a>
+      <a class="card" href="https://www.douyin.com"><span class="card-icon">🎶</span><span class="card-name">抖音</span></a>
+      <a class="card" href="https://www.xiaohongshu.com"><span class="card-icon">📕</span><span class="card-name">小红书</span></a>
+      <a class="card" href="https://m.weibo.cn"><span class="card-icon">💬</span><span class="card-name">微博</span></a>
+      <a class="card" href="https://music.163.com"><span class="card-icon">🎵</span><span class="card-name">网易云</span></a>
+      <a class="card" href="https://www.netflix.com"><span class="card-icon">🎬</span><span class="card-name">Netflix</span></a>
+      <a class="card" href="https://www.iqiyi.com"><span class="card-icon">🍿</span><span class="card-name">爱奇艺</span></a>
+    </div>
+  </div>
+
+  <!-- 互联网技术区 -->
+  <div class="category">
+    <div class="category-title"><span class="emoji">💻</span> 互联网技术区</div>
+    <div class="grid">
+      <a class="card" href="https://github.com"><span class="card-icon">🐙</span><span class="card-name">GitHub</span></a>
+      <a class="card" href="https://stackoverflow.com"><span class="card-icon">📚</span><span class="card-name">StackOverflow</span></a>
+      <a class="card" href="https://juejin.cn"><span class="card-icon">💎</span><span class="card-name">掘金</span></a>
+      <a class="card" href="https://www.v2ex.com"><span class="card-icon">💭</span><span class="card-name">V2EX</span></a>
+      <a class="card" href="https://news.ycombinator.com"><span class="card-icon">📰</span><span class="card-name">HackerNews</span></a>
+      <a class="card" href="https://36kr.com"><span class="card-icon">🚀</span><span class="card-name">36Kr</span></a>
+      <a class="card" href="https://www.infoq.cn"><span class="card-icon">📡</span><span class="card-name">InfoQ</span></a>
+      <a class="card" href="https://developer.mozilla.org"><span class="card-icon">📖</span><span class="card-name">MDN</span></a>
+      <a class="card" href="https://leetcode.cn"><span class="card-icon">🧩</span><span class="card-name">LeetCode</span></a>
+      <a class="card" href="https://www.zhihu.com"><span class="card-icon">❓</span><span class="card-name">知乎</span></a>
+    </div>
+  </div>
+
+  <!-- 炒币区 -->
+  <div class="category">
+    <div class="category-title"><span class="emoji">💰</span> 炒币区</div>
+    <div class="grid">
+      <a class="card" href="https://www.binance.com/zh-CN"><span class="card-icon">🟡</span><span class="card-name">币安</span></a>
+      <a class="card" href="https://www.okx.com/cn"><span class="card-icon">⚫</span><span class="card-name">OKX</span></a>
+      <a class="card" href="https://coinmarketcap.com"><span class="card-icon">📊</span><span class="card-name">CMC</span></a>
+      <a class="card" href="https://www.tradingview.com"><span class="card-icon">📈</span><span class="card-name">TradingView</span></a>
+      <a class="card" href="https://www.feixiaohao.co"><span class="card-icon">🪙</span><span class="card-name">非小号</span></a>
+      <a class="card" href="https://www.jinse.com"><span class="card-icon">🟢</span><span class="card-name">金色财经</span></a>
+      <a class="card" href="https://www.coingecko.com"><span class="card-icon">🦎</span><span class="card-name">CoinGecko</span></a>
+      <a class="card" href="https://defillama.com"><span class="card-icon">🦙</span><span class="card-name">DefiLlama</span></a>
+    </div>
+  </div>
+
+  <!-- 新闻区 -->
+  <div class="category">
+    <div class="category-title"><span class="emoji">📰</span> 新闻区</div>
+    <div class="grid">
+      <a class="card" href="https://m.toutiao.com"><span class="card-icon">📰</span><span class="card-name">头条</span></a>
+      <a class="card" href="https://www.thepaper.cn"><span class="card-icon">🌊</span><span class="card-name">澎湃</span></a>
+      <a class="card" href="https://www.huxiu.com"><span class="card-icon">🐅</span><span class="card-name">虎嗅</span></a>
+      <a class="card" href="https://www.bbc.com/zhongwen/simp"><span class="card-icon">🌐</span><span class="card-name">BBC中文</span></a>
+      <a class="card" href="https://cn.reuters.com"><span class="card-icon">📡</span><span class="card-name">路透</span></a>
+      <a class="card" href="https://www.nytimes.com/zh-hans"><span class="card-icon">🗞️</span><span class="card-name">纽约时报</span></a>
+      <a class="card" href="https://www.zaobao.com"><span class="card-icon">🌅</span><span class="card-name">联合早报</span></a>
+      <a class="card" href="https://news.qq.com"><span class="card-icon">🐧</span><span class="card-name">腾讯新闻</span></a>
+    </div>
+  </div>
+
+  <!-- 财经/股票区 -->
+  <div class="category">
+    <div class="category-title"><span class="emoji">📈</span> 财经股票区</div>
+    <div class="grid">
+      <a class="card" href="https://xueqiu.com"><span class="card-icon">⚪</span><span class="card-name">雪球</span></a>
+      <a class="card" href="https://www.eastmoney.com"><span class="card-icon">🟠</span><span class="card-name">东方财富</span></a>
+      <a class="card" href="https://finance.sina.com.cn"><span class="card-icon">📉</span><span class="card-name">新浪财经</span></a>
+      <a class="card" href="https://www.wallstreetcn.com"><span class="card-icon">🏛️</span><span class="card-name">华尔街见闻</span></a>
+      <a class="card" href="https://www.investing.com/?cid=152"><span class="card-icon">💹</span><span class="card-name">Investing</span></a>
+      <a class="card" href="https://www.bloomberg.com"><span class="card-icon">🔵</span><span class="card-name">彭博</span></a>
+    </div>
+  </div>
+
+  <!-- 摸鱼工具区 -->
+  <div class="category">
+    <div class="category-title"><span class="emoji">🛠️</span> 摸鱼工具区</div>
+    <div class="grid">
+      <a class="card" href="https://www.google.com"><span class="card-icon">🔍</span><span class="card-name">Google</span></a>
+      <a class="card" href="https://chat.openai.com"><span class="card-icon">🤖</span><span class="card-name">ChatGPT</span></a>
+      <a class="card" href="https://claude.ai"><span class="card-icon">🟣</span><span class="card-name">Claude</span></a>
+      <a class="card" href="https://www.deepseek.com"><span class="card-icon">🐋</span><span class="card-name">DeepSeek</span></a>
+      <a class="card" href="https://translate.google.com"><span class="card-icon">🌐</span><span class="card-name">翻译</span></a>
+      <a class="card" href="https://mail.google.com"><span class="card-icon">📧</span><span class="card-name">Gmail</span></a>
+      <a class="card" href="https://www.notion.so"><span class="card-icon">📝</span><span class="card-name">Notion</span></a>
+      <a class="card" href="https://docs.qq.com"><span class="card-icon">📄</span><span class="card-name">腾讯文档</span></a>
+    </div>
+  </div>
+
+  <div class="tip">⌨️ ⌥~ 显隐 · ⌘⌥Q 退出 · 双击切换大小 · 失焦自动缩回</div>
+
+  <script>
+    function doSearch(e) {
+      e.preventDefault();
+      const q = document.getElementById('q').value.trim();
+      if (!q) return;
+      let url;
+      if (q.includes('://')) {
+        url = q;
+      } else if (q.indexOf(' ') < 0 && q.includes('.')) {
+        url = 'https://' + q;
+      } else {
+        url = 'https://www.google.com/search?q=' + encodeURIComponent(q);
+      }
+      location.href = url;
+    }
+    // ⌘+L 聚焦搜索框
+    document.addEventListener('keydown', e => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'l') {
+        e.preventDefault();
+        document.getElementById('q').focus();
+        document.getElementById('q').select();
+      }
+    });
+  </script>
+</body>
+</html>

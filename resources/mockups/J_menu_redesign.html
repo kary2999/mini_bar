@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Meowser · 菜单 UI 重设计</title>
+<style>
+  :root {
+    --label:    #1d1d1f;
+    --label-2:  #424245;
+    --label-3:  #6e6e73;
+    --label-4:  #86868b;
+    --bg:       #f5f5f7;
+    --bg-elev:  #ffffff;
+    --bg-sec:   #fafafa;
+    --sep:      rgba(0,0,0,0.06);
+    --hairline: rgba(0,0,0,0.08);
+    --fill-1:   rgba(0,0,0,0.04);
+    --fill-2:   rgba(0,0,0,0.08);
+    --fill-3:   rgba(0,0,0,0.12);
+    --blue:     #0071e3;
+    --blue-bg:  rgba(0,113,227,0.10);
+    --green:    #34c759;
+    --orange:   #ff9500;
+    --red:      #ff3b30;
+    --purple:   #af52de;
+    --pink:     #ff2d55;
+    --shadow-sm: 0 0.5px 1px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 0.5px 1px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.08);
+    --shadow-xl: 0 0.5px 1px rgba(0,0,0,0.10), 0 16px 48px rgba(0,0,0,0.18);
+    --r-sm: 6px;
+    --r-md: 10px;
+    --r-lg: 14px;
+    --ease: cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --label: #f5f5f7;
+      --label-2: #d1d1d6;
+      --label-3: #98989d;
+      --label-4: #636366;
+      --bg: #1c1c1e;
+      --bg-elev: rgba(44,44,46,0.92);
+      --bg-sec: #1a1a1c;
+      --sep: rgba(255,255,255,0.06);
+      --hairline: rgba(255,255,255,0.10);
+      --fill-1: rgba(255,255,255,0.06);
+      --fill-2: rgba(255,255,255,0.10);
+      --fill-3: rgba(255,255,255,0.16);
+      --blue: #0a84ff;
+      --shadow-xl: 0 0.5px 1px rgba(0,0,0,0.5), 0 16px 48px rgba(0,0,0,0.5);
+    }
+  }
+
+  *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "PingFang SC", sans-serif;
+    background: linear-gradient(135deg, #5b8aa8 0%, #8b6daa 50%, #c08988 100%);
+    color: var(--label);
+    -webkit-font-smoothing: antialiased;
+    -webkit-user-select: none;
+    font-size: 13px;
+    line-height: 1.4;
+    min-height: 100vh;
+    padding: 100px 40px 40px;
+    display: flex;
+    gap: 60px;
+    align-items: flex-start;
+    justify-content: center;
+  }
+  @media (prefers-color-scheme: dark) {
+    body { background: linear-gradient(135deg, #1a2238 0%, #2a1845 50%, #3a1f1c 100%); }
+  }
+
+  /* 模拟 macOS 菜单栏 */
+  .menubar {
+    position: fixed; top: 0; left: 0; right: 0;
+    height: 24px;
+    background: rgba(0,0,0,0.55);
+    backdrop-filter: blur(20px);
+    padding: 0 14px;
+    display: flex; align-items: center; gap: 16px;
+    color: white; font-size: 12px;
+    z-index: 1000;
+  }
+  .menubar-spacer { flex: 1; }
+  .menubar-icon {
+    padding: 0 8px; cursor: pointer;
+    border-radius: 5px;
+    height: 22px; display: flex; align-items: center;
+  }
+  .menubar-icon.active {
+    background: rgba(255,255,255,0.15);
+  }
+  .menubar-kitten {
+    width: 18px; height: 18px;
+    border-radius: 4px;
+    background: linear-gradient(135deg, #FFA94D 0%, #FF6B9D 100%);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 12px;
+  }
+
+  /* ───── 主popover ───── */
+  .popover {
+    width: 320px;
+    background: var(--bg-elev);
+    backdrop-filter: blur(40px) saturate(180%);
+    -webkit-backdrop-filter: blur(40px) saturate(180%);
+    border: 0.5px solid var(--hairline);
+    border-radius: 16px;
+    box-shadow: var(--shadow-xl);
+    overflow: hidden;
+    position: relative;
+  }
+  /* popover 上方的箭头 */
+  .popover::before {
+    content: "";
+    position: absolute;
+    top: -7px; left: 28px;
+    width: 14px; height: 14px;
+    background: var(--bg-elev);
+    border-left: 0.5px solid var(--hairline);
+    border-top: 0.5px solid var(--hairline);
+    transform: rotate(45deg);
+  }
+
+  /* Header (Boss 信息) */
+  .header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 16px;
+    background: linear-gradient(135deg, rgba(255,169,77,0.10), rgba(255,107,157,0.10));
+    border-bottom: 0.5px solid var(--sep);
+  }
+  .avatar {
+    width: 40px; height: 40px;
+    border-radius: 11px;
+    background: linear-gradient(135deg, #FFA94D, #FF6B9D);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    box-shadow: 0 2px 6px rgba(255,107,157,0.3);
+    flex-shrink: 0;
+  }
+  .h-info { flex: 1; min-width: 0; }
+  .h-name { font-size: 14px; font-weight: 700; letter-spacing: -0.3px; display: flex; align-items: center; gap: 6px; }
+  .mode-badge {
+    display: inline-flex; align-items: center;
+    padding: 1px 7px; border-radius: 999px;
+    background: var(--blue-bg); color: var(--blue);
+    font-size: 10px; font-weight: 600;
+  }
+  .h-meta {
+    font-size: 11px; color: var(--label-3);
+    margin-top: 2px;
+    font-family: ui-monospace, "SF Mono", monospace;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .h-action {
+    display: flex; align-items: center; justify-content: center;
+    width: 28px; height: 28px;
+    border-radius: 7px;
+    background: var(--fill-1);
+    cursor: pointer;
+    color: var(--label-2);
+  }
+  .h-action:hover { background: var(--fill-2); }
+
+  /* Quick Actions Grid */
+  .quick {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 6px;
+    padding: 10px 12px;
+    border-bottom: 0.5px solid var(--sep);
+  }
+  .quick-btn {
+    display: flex; flex-direction: column; align-items: center; gap: 5px;
+    padding: 10px 4px;
+    border-radius: 9px;
+    cursor: pointer;
+    background: transparent;
+    transition: background 0.12s var(--ease);
+  }
+  .quick-btn:hover { background: var(--fill-1); }
+  .quick-btn:active { background: var(--fill-2); }
+  .quick-icon {
+    width: 32px; height: 32px;
+    border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    color: white;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+  }
+  .quick-icon.blue { background: linear-gradient(135deg, #0071e3, #5AC8FA); }
+  .quick-icon.green { background: linear-gradient(135deg, #34c759, #00c7be); }
+  .quick-icon.orange { background: linear-gradient(135deg, #ff9500, #ff3b30); }
+  .quick-icon.purple { background: linear-gradient(135deg, #af52de, #ff2d55); }
+  .quick-label { font-size: 11px; color: var(--label-2); font-weight: 500; }
+
+  /* Section */
+  .section { padding: 4px 0; }
+  .sec-title {
+    padding: 8px 16px 4px;
+    font-size: 10px; font-weight: 700;
+    color: var(--label-3); text-transform: uppercase;
+    letter-spacing: 0.6px;
+  }
+  .row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 16px;
+    cursor: pointer;
+    transition: background 0.12s var(--ease);
+  }
+  .row:hover { background: var(--fill-1); }
+  .row-icon {
+    width: 22px; height: 22px;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px;
+    color: white;
+    flex-shrink: 0;
+  }
+  .row-icon.gray { background: linear-gradient(135deg, #8E8E93, #636366); }
+  .row-icon.blue { background: linear-gradient(135deg, #0071e3, #5AC8FA); }
+  .row-icon.green { background: linear-gradient(135deg, #34c759, #00c7be); }
+  .row-icon.orange { background: linear-gradient(135deg, #ff9500, #ff3b30); }
+  .row-icon.purple { background: linear-gradient(135deg, #af52de, #ff2d55); }
+  .row-icon.red { background: linear-gradient(135deg, #ff3b30, #ff2d55); }
+  .row-text { flex: 1; }
+  .row-title { font-size: 13px; font-weight: 500; }
+  .row-sub { font-size: 11px; color: var(--label-3); margin-top: 1px; font-family: ui-monospace, monospace; }
+  .row-arrow { color: var(--label-4); font-size: 11px; }
+  .row-kbd {
+    display: inline-block; padding: 1px 6px;
+    background: var(--fill-1); border: 0.5px solid var(--hairline);
+    border-radius: 4px;
+    font-family: ui-monospace, monospace;
+    font-size: 10px;
+    color: var(--label-2);
+  }
+
+  /* 摆放：方向 picker */
+  .layout-row {
+    padding: 10px 16px;
+  }
+  .layout-label {
+    font-size: 11px; color: var(--label-3); margin-bottom: 6px;
+  }
+  .dir-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: 32px 32px 32px;
+    gap: 4px;
+    width: 110px; height: 100px;
+    margin: 0 auto 8px;
+  }
+  .dir-grid > div { background: transparent; }
+  .dir-btn {
+    display: flex; align-items: center; justify-content: center;
+    background: var(--fill-1) !important;
+    border-radius: 6px;
+    cursor: pointer;
+    color: var(--label-3);
+    font-size: 14px;
+    border: 1.5px solid transparent;
+  }
+  .dir-btn:hover { background: var(--fill-2) !important; }
+  .dir-btn.active {
+    background: var(--blue-bg) !important;
+    border-color: var(--blue);
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .dir-center {
+    display: flex; align-items: center; justify-content: center;
+    background: transparent !important;
+    color: var(--label-3); font-size: 10px;
+    font-family: ui-monospace, monospace;
+  }
+
+  /* 样式：tile / cascade segmented */
+  .seg {
+    display: flex; gap: 2px;
+    background: var(--fill-1);
+    padding: 2px;
+    border-radius: 7px;
+  }
+  .seg-item {
+    flex: 1;
+    padding: 5px 12px;
+    border-radius: 5px;
+    font-size: 12px; cursor: pointer;
+    color: var(--label-2);
+    text-align: center;
+    transition: all 0.12s;
+  }
+  .seg-item.active {
+    background: var(--bg-elev);
+    color: var(--label);
+    box-shadow: 0 0.5px 1px rgba(0,0,0,0.1);
+    font-weight: 600;
+  }
+
+  /* Slider */
+  .sl-row {
+    padding: 10px 16px;
+  }
+  .sl-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 6px;
+  }
+  .sl-name { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 500; }
+  .sl-val { font-family: ui-monospace, monospace; font-size: 11px; color: var(--label-3); }
+  .slider {
+    height: 4px; background: var(--fill-2); border-radius: 2px;
+    position: relative;
+  }
+  .slider .fill {
+    position: absolute; left: 0; top: 0; bottom: 0;
+    background: var(--blue); border-radius: 2px;
+  }
+  .slider .knob {
+    position: absolute; top: -4px;
+    width: 12px; height: 12px;
+    background: white; border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    transform: translateX(-50%);
+  }
+
+  /* Toggle */
+  .toggle {
+    width: 32px; height: 20px;
+    border-radius: 999px;
+    background: var(--green);
+    position: relative;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .toggle::after {
+    content: ""; position: absolute;
+    top: 1px; left: 13px;
+    width: 18px; height: 18px;
+    background: white; border-radius: 50%;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    transition: left 0.18s var(--ease-spring);
+  }
+  .toggle.off { background: var(--label-4); }
+  .toggle.off::after { left: 1px; }
+
+  /* Proxy chip */
+  .proxy-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 3px 8px;
+    background: var(--green); color: white;
+    border-radius: 999px;
+    font-size: 10px; font-weight: 600;
+    font-family: ui-monospace, monospace;
+  }
+  .proxy-chip.direct { background: var(--label-4); }
+  .proxy-chip.warn { background: var(--orange); }
+  .proxy-chip-dot { width: 5px; height: 5px; border-radius: 50%; background: white; }
+
+  /* Divider */
+  .divider {
+    height: 0.5px;
+    background: var(--sep);
+    margin: 4px 12px;
+  }
+
+  /* Footer */
+  .footer {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 16px;
+    background: var(--bg-sec);
+    border-top: 0.5px solid var(--sep);
+  }
+  .footer-info {
+    font-size: 11px; color: var(--label-3);
+    font-family: ui-monospace, monospace;
+  }
+  .footer-quit {
+    color: var(--red); cursor: pointer; font-size: 12px;
+    padding: 4px 10px; border-radius: 6px;
+  }
+  .footer-quit:hover { background: rgba(255,59,48,0.10); }
+
+  /* ───── 对比说明 ───── */
+  .compare-note {
+    width: 320px;
+    color: white;
+  }
+  .compare-h {
+    font-size: 22px; font-weight: 700;
+    margin-bottom: 12px; letter-spacing: -0.5px;
+  }
+  .compare-text {
+    font-size: 13px; line-height: 1.7;
+    color: rgba(255,255,255,0.85);
+  }
+  .compare-list {
+    margin-top: 14px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .compare-item {
+    background: rgba(255,255,255,0.1);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 10px;
+    padding: 10px 14px;
+    color: white;
+  }
+  .compare-item-title {
+    font-size: 12px; font-weight: 700; margin-bottom: 3px;
+  }
+  .compare-item-text {
+    font-size: 11px; line-height: 1.5;
+    color: rgba(255,255,255,0.8);
+  }
+  .check { color: #34c759; font-weight: 700; margin-right: 4px; }
+</style>
+</head>
+<body>
+
+<!-- macOS 菜单栏 -->
+<div class="menubar">
+  <span style="font-weight:600;">🍎</span>
+  <span>Meowser</span>
+  <span class="menubar-spacer"></span>
+  <span class="menubar-icon active"><span class="menubar-kitten">🐱</span></span>
+  <span class="menubar-icon">2026/5/2 14:32</span>
+</div>
+
+<!-- ★ 重设计后的 popover -->
+<div class="popover">
+
+  <!-- Header: Boss 身份卡 -->
+  <div class="header">
+    <div class="avatar">🐱</div>
+    <div class="h-info">
+      <div class="h-name">
+        默认
+        <span class="mode-badge">⚒️ 工作模式</span>
+      </div>
+      <div class="h-meta">3 个窗口 · v1.5.0</div>
+    </div>
+    <div class="h-action" title="切换工作区">⊕</div>
+  </div>
+
+  <!-- Quick Actions: 4 个高频按钮 -->
+  <div class="quick">
+    <div class="quick-btn">
+      <div class="quick-icon blue">👁</div>
+      <div class="quick-label">显示/隐藏</div>
+    </div>
+    <div class="quick-btn">
+      <div class="quick-icon green">⊕</div>
+      <div class="quick-label">新窗口</div>
+    </div>
+    <div class="quick-btn">
+      <div class="quick-icon orange">⇄</div>
+      <div class="quick-label">整理</div>
+    </div>
+    <div class="quick-btn">
+      <div class="quick-icon purple">🏠</div>
+      <div class="quick-label">首页</div>
+    </div>
+  </div>
+
+  <!-- 摆放控制 -->
+  <div class="sec-title">摆放</div>
+  <div class="layout-row">
+    <div class="dir-grid">
+      <div></div>
+      <div class="dir-btn" title="贴上 (横向)">↑</div>
+      <div></div>
+      <div class="dir-btn active" title="贴左 (竖列)">←</div>
+      <div class="dir-center">竖列</div>
+      <div class="dir-btn" title="贴右 (竖列)">→</div>
+      <div></div>
+      <div class="dir-btn" title="贴下 (横向)">↓</div>
+      <div></div>
+    </div>
+    <div class="seg">
+      <div class="seg-item active">▥ 平铺</div>
+      <div class="seg-item">▤ 叠放</div>
+    </div>
+  </div>
+
+  <!-- 滑块：间距 + 透明度 -->
+  <div class="sl-row" style="border-top:0.5px solid var(--sep);">
+    <div class="sl-head">
+      <div class="sl-name">📏 窗口间距</div>
+      <div class="sl-val">8 px</div>
+    </div>
+    <div class="slider">
+      <div class="fill" style="width: 27%;"></div>
+      <div class="knob" style="left: 27%;"></div>
+    </div>
+  </div>
+
+  <div class="sl-row">
+    <div class="sl-head">
+      <div class="sl-name">💧 不透明度</div>
+      <div class="sl-val">100%</div>
+    </div>
+    <div class="slider">
+      <div class="fill" style="width: 100%;"></div>
+      <div class="knob" style="left: 100%;"></div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- 代理 -->
+  <div class="row">
+    <div class="row-icon green">🌐</div>
+    <div class="row-text">
+      <div class="row-title">代理</div>
+      <div class="row-sub">socks5 127.0.0.1:1087</div>
+    </div>
+    <div class="proxy-chip"><span class="proxy-chip-dot"></span> 已连接</div>
+  </div>
+
+  <!-- 置顶（行内 toggle）-->
+  <div class="row">
+    <div class="row-icon orange">📌</div>
+    <div class="row-text">
+      <div class="row-title">窗口置顶</div>
+      <div class="row-sub">浮于其他 App 之上</div>
+    </div>
+    <div class="toggle"></div>
+  </div>
+
+  <!-- 无痕模式 -->
+  <div class="row">
+    <div class="row-icon purple">👁‍🗨</div>
+    <div class="row-text">
+      <div class="row-title">无痕模式</div>
+      <div class="row-sub">关闭 App 即清 Cookie</div>
+    </div>
+    <div class="toggle off"></div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- 小窗尺寸 -->
+  <div class="row">
+    <div class="row-icon blue">📐</div>
+    <div class="row-text">
+      <div class="row-title">小窗尺寸</div>
+      <div class="row-sub">200 × 150</div>
+    </div>
+    <div class="row-arrow">›</div>
+  </div>
+
+  <!-- 常用网站 -->
+  <div class="row">
+    <div class="row-icon red">⭐</div>
+    <div class="row-text">
+      <div class="row-title">常用网站</div>
+      <div class="row-sub">B站 · YouTube · GitHub · ...</div>
+    </div>
+    <div class="row-arrow">›</div>
+  </div>
+
+  <!-- 输入网址 -->
+  <div class="row">
+    <div class="row-icon gray">🔗</div>
+    <div class="row-text">
+      <div class="row-title">输入网址</div>
+    </div>
+    <div class="row-kbd">⌘L</div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- 设置（折叠 / 跳转高级面板）-->
+  <div class="row">
+    <div class="row-icon gray">⚙</div>
+    <div class="row-text">
+      <div class="row-title">快捷键 & 高级设置...</div>
+    </div>
+    <div class="row-arrow">›</div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <div class="footer-info">⌥~ 唤起 · ⌘⌥R 整理</div>
+    <div class="footer-quit">退出</div>
+  </div>
+</div>
+
+<!-- 对比说明 -->
+<div class="compare-note">
+  <div class="compare-h">为什么换样子？</div>
+  <div class="compare-text">
+    旧菜单是系统默认 NSMenu — 单调、无层次、没有可视化控件。<br>
+    新版用 NSPopover 自定义面板，把高频操作放快捷格，状态信息（代理 / 模式 / 窗口数）一眼可见。
+  </div>
+
+  <div class="compare-list">
+    <div class="compare-item">
+      <div class="compare-item-title"><span class="check">✓</span> Header 显示当前 Boss</div>
+      <div class="compare-item-text">头像 + 名字 + 模式 + 窗口数，让你知道"现在在哪个工作区"</div>
+    </div>
+    <div class="compare-item">
+      <div class="compare-item-title"><span class="check">✓</span> 4 个 Quick Action</div>
+      <div class="compare-item-text">显示/隐藏 · 新窗口 · 整理 · 首页 — 高频操作一键直达</div>
+    </div>
+    <div class="compare-item">
+      <div class="compare-item-title"><span class="check">✓</span> 摆放 = 方向键盘 + 样式切换</div>
+      <div class="compare-item-text">3×3 网格直接点方向，平铺/叠放分段控件，像系统设置</div>
+    </div>
+    <div class="compare-item">
+      <div class="compare-item-title"><span class="check">✓</span> 滑块直接调透明度 / 间距</div>
+      <div class="compare-item-text">不再钻三层菜单选 80% — 现场拖滑块</div>
+    </div>
+    <div class="compare-item">
+      <div class="compare-item-title"><span class="check">✓</span> 代理 / 置顶 / 无痕 行内切换</div>
+      <div class="compare-item-text">状态徽章 + Toggle，无需进对话框</div>
+    </div>
+    <div class="compare-item">
+      <div class="compare-item-title"><span class="check">✓</span> 彩色图标 + 圆角 + 留白</div>
+      <div class="compare-item-text">视觉层次清晰 · 跟随系统明暗模式</div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Minbar · 10 槽位监控面板</title>
+<style>
+  :root {
+    --label:    #1d1d1f;
+    --label-2:  #424245;
+    --label-3:  #6e6e73;
+    --label-4:  #86868b;
+    --bg:       #f5f5f7;
+    --bg-elev:  #ffffff;
+    --bg-sec:   #fafafa;
+    --sep:      rgba(0,0,0,0.06);
+    --hairline: rgba(0,0,0,0.08);
+    --fill-1:   rgba(0,0,0,0.04);
+    --fill-2:   rgba(0,0,0,0.08);
+    --blue:     #0071e3;
+    --blue-bg:  rgba(0,113,227,0.10);
+    --green:    #34c759;
+    --orange:   #ff9500;
+    --red:      #ff3b30;
+
+    --slot-1: #ff3b30;
+    --slot-2: #ff9500;
+    --slot-3: #ffcc00;
+    --slot-4: #34c759;
+    --slot-5: #00c7be;
+    --slot-6: #30b0c7;
+    --slot-7: #0a84ff;
+    --slot-8: #5e5ce6;
+    --slot-9: #bf5af2;
+    --slot-10: #ff375f;
+
+    --shadow-sm: 0 0.5px 1px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 0.5px 1px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.06);
+    --shadow-lg: 0 0.5px 1px rgba(0,0,0,0.08), 0 12px 32px rgba(0,0,0,0.10);
+    --shadow-xl: 0 0.5px 1px rgba(0,0,0,0.12), 0 24px 64px rgba(0,0,0,0.18);
+
+    --r-sm: 6px;
+    --r-md: 10px;
+    --r-lg: 14px;
+    --r-xl: 20px;
+    --ease: cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --label: #f5f5f7;
+      --label-2: #d1d1d6;
+      --label-3: #98989d;
+      --label-4: #636366;
+      --bg: #161618;
+      --bg-elev: #1f1f22;
+      --bg-sec: #1c1c1e;
+      --sep: rgba(255,255,255,0.06);
+      --hairline: rgba(255,255,255,0.08);
+      --fill-1: rgba(255,255,255,0.06);
+      --fill-2: rgba(255,255,255,0.10);
+      --blue: #0a84ff;
+      --shadow-sm: 0 0.5px 1px rgba(0,0,0,0.5), 0 1px 2px rgba(0,0,0,0.3);
+      --shadow-md: 0 0.5px 1px rgba(0,0,0,0.5), 0 4px 12px rgba(0,0,0,0.4);
+      --shadow-xl: 0 0.5px 1px rgba(0,0,0,0.5), 0 24px 64px rgba(0,0,0,0.5);
+    }
+  }
+
+  *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "PingFang SC", sans-serif;
+    color: var(--label);
+    -webkit-font-smoothing: antialiased;
+    -webkit-user-select: none;
+    font-size: 13px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  /* ─── Desktop simulation ─── */
+  .desktop {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #5b8aa8 0%, #8b6daa 50%, #c08988 100%);
+    position: relative;
+    overflow: hidden;
+  }
+  @media (prefers-color-scheme: dark) {
+    .desktop {
+      background: linear-gradient(135deg, #1a2238 0%, #2a1845 50%, #3a1f1c 100%);
+    }
+  }
+
+  .menubar {
+    height: 24px;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(20px);
+    padding: 0 14px;
+    display: flex; align-items: center; gap: 16px;
+    color: white; font-size: 12px;
+  }
+  .menubar-spacer { flex: 1; }
+
+  /* ─── 主屏内容区（背景：客服CRM 模拟）─── */
+  .main-screen {
+    position: absolute;
+    top: 60px; left: 40px; right: 40px; bottom: 40px;
+    background: var(--bg-elev);
+    border-radius: var(--r-xl);
+    box-shadow: var(--shadow-xl);
+    overflow: hidden;
+    border: 0.5px solid var(--hairline);
+    display: flex;
+  }
+  .crm-sidebar {
+    width: 200px;
+    background: var(--bg-sec);
+    border-right: 0.5px solid var(--sep);
+    padding: 18px 12px;
+  }
+  .crm-brand {
+    font-weight: 700; font-size: 15px; padding: 6px 12px 18px;
+    color: var(--label-2);
+  }
+  .crm-nav-item {
+    padding: 7px 12px; border-radius: 7px;
+    color: var(--label-2); font-size: 12px;
+    margin: 2px 0;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .crm-nav-item.active { background: var(--blue-bg); color: var(--blue); font-weight: 500; }
+  .crm-content {
+    flex: 1; padding: 24px 28px;
+    overflow: hidden;
+  }
+  .crm-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 20px;
+  }
+  .crm-title { font-size: 22px; font-weight: 700; letter-spacing: -0.4px; }
+  .crm-stats {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+    margin-bottom: 20px;
+  }
+  .stat-card {
+    padding: 14px 16px; background: var(--bg-sec);
+    border-radius: var(--r-md);
+    border: 0.5px solid var(--hairline);
+  }
+  .stat-num { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+  .stat-num.red { color: var(--red); }
+  .stat-num.green { color: var(--green); }
+  .stat-num.blue { color: var(--blue); }
+  .stat-num.orange { color: var(--orange); }
+  .stat-label { font-size: 11px; color: var(--label-3); margin-top: 3px; }
+
+  .ticket-list {
+    border: 0.5px solid var(--hairline);
+    border-radius: var(--r-md);
+    overflow: hidden;
+  }
+  .ticket-row {
+    display: grid;
+    grid-template-columns: 60px 1fr 100px 100px 80px;
+    gap: 14px; align-items: center;
+    padding: 12px 16px;
+    border-bottom: 0.5px solid var(--sep);
+    font-size: 12px;
+  }
+  .ticket-row.head {
+    background: var(--bg-sec); color: var(--label-3);
+    font-weight: 600;
+    font-size: 11px; text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+  .ticket-id { font-family: ui-monospace, monospace; color: var(--label-3); }
+  .ticket-title { color: var(--label); }
+  .badge {
+    display: inline-block; padding: 2px 8px; border-radius: 999px;
+    font-size: 10px; font-weight: 600;
+  }
+  .badge.urgent { background: rgba(255,59,48,0.12); color: var(--red); }
+  .badge.normal { background: rgba(52,199,89,0.12); color: var(--green); }
+  .badge.pending { background: rgba(255,149,0,0.12); color: var(--orange); }
+
+  /* ─── 右下角 10 个监控小窗 ─── */
+  .slots-grid {
+    position: absolute;
+    bottom: 56px; right: 56px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    z-index: 50;
+  }
+  .slot {
+    width: 180px;
+    background: var(--bg-elev);
+    border-radius: var(--r-md);
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+    border: 1px solid var(--hairline);
+    cursor: pointer;
+    transition: all 0.18s var(--ease-spring);
+    position: relative;
+  }
+  .slot:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-xl);
+  }
+  .slot-titlebar {
+    height: 22px;
+    background: var(--bg-sec);
+    border-bottom: 0.5px solid var(--sep);
+    display: flex; align-items: center; gap: 5px;
+    padding: 0 8px;
+    font-size: 10px;
+  }
+  .slot-num {
+    width: 14px; height: 14px;
+    border-radius: 4px;
+    color: white; font-size: 9px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700;
+    font-family: ui-monospace, monospace;
+  }
+  .slot-name {
+    flex: 1; color: var(--label-2); font-weight: 500;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .slot-hotkey {
+    font-family: ui-monospace, monospace;
+    font-size: 9px;
+    color: var(--label-3);
+    padding: 1px 4px;
+    background: var(--fill-1);
+    border-radius: 3px;
+    border: 0.5px solid var(--hairline);
+  }
+  .slot-body {
+    height: 80px;
+    padding: 8px 10px;
+    background: var(--bg-sec);
+    overflow: hidden;
+    position: relative;
+  }
+  .chat-msg {
+    display: flex; gap: 6px;
+    margin-bottom: 4px;
+    font-size: 9px;
+    line-height: 1.3;
+  }
+  .chat-avatar {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    color: white; font-size: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700;
+  }
+  .chat-name { font-weight: 600; color: var(--label-2); margin-right: 2px; font-size: 9px; }
+  .chat-text { color: var(--label-2); flex: 1; overflow: hidden; }
+
+  .unread-badge {
+    position: absolute;
+    top: 6px; right: 8px;
+    min-width: 16px; height: 16px;
+    padding: 0 5px;
+    background: var(--red);
+    color: white;
+    border-radius: 999px;
+    font-size: 9px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 1px 3px rgba(255,59,48,0.4);
+  }
+
+  /* Slot 颜色 */
+  .slot[data-n="1"] .slot-num  { background: var(--slot-1); }
+  .slot[data-n="2"] .slot-num  { background: var(--slot-2); }
+  .slot[data-n="3"] .slot-num  { background: var(--slot-3); color: #1d1d1f; }
+  .slot[data-n="4"] .slot-num  { background: var(--slot-4); }
+  .slot[data-n="5"] .slot-num  { background: var(--slot-5); }
+  .slot[data-n="6"] .slot-num  { background: var(--slot-6); }
+  .slot[data-n="7"] .slot-num  { background: var(--slot-7); }
+  .slot[data-n="8"] .slot-num  { background: var(--slot-8); }
+  .slot[data-n="9"] .slot-num  { background: var(--slot-9); }
+  .slot[data-n="10"] .slot-num { background: var(--slot-10); }
+
+  /* 高亮的（按下了热键放大那个）*/
+  .slot.flash {
+    box-shadow: 0 0 0 3px var(--blue), var(--shadow-xl);
+    transform: scale(1.05);
+  }
+
+  /* ─── 浮起的"放大"窗口（按了 ⌘⌥3）─── */
+  .enlarged {
+    position: absolute;
+    top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: 720px;
+    background: var(--bg-elev);
+    border-radius: var(--r-xl);
+    box-shadow: 0 24px 80px rgba(0,0,0,0.3), 0 0 0 1px rgba(0,0,0,0.05);
+    overflow: hidden;
+    z-index: 100;
+    animation: pop 0.4s var(--ease-spring);
+  }
+  @keyframes pop {
+    from { opacity: 0; transform: translate(-50%, -50%) scale(0.92); }
+    to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  }
+  .enlarged-titlebar {
+    height: 38px;
+    background: var(--bg-sec);
+    border-bottom: 0.5px solid var(--sep);
+    display: flex; align-items: center; gap: 10px;
+    padding: 0 14px;
+  }
+  .enlarged-num {
+    width: 22px; height: 22px;
+    border-radius: 6px;
+    background: var(--slot-3);
+    color: #1d1d1f;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700;
+    font-family: ui-monospace, monospace;
+  }
+  .enlarged-name { flex: 1; font-size: 14px; font-weight: 600; }
+  .enlarged-hotkey { font-family: ui-monospace, monospace; font-size: 11px; color: var(--label-3); padding: 3px 8px; background: var(--fill-1); border-radius: 5px; }
+  .enlarged-body {
+    background: white;
+    background: linear-gradient(180deg, #34c759 0%, #2db84d 100%);
+    height: 380px;
+    padding: 24px;
+    color: white;
+    display: flex; flex-direction: column;
+  }
+  /* WeChat-like UI */
+  .wx-top {
+    padding-bottom: 14px; border-bottom: 1px solid rgba(255,255,255,0.2);
+    margin-bottom: 14px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .wx-title { font-size: 16px; font-weight: 700; }
+  .wx-meta { font-size: 11px; opacity: 0.85; }
+  .wx-msg-list { flex: 1; display: flex; flex-direction: column; gap: 10px; overflow: hidden; }
+  .wx-msg {
+    display: flex; gap: 8px;
+    max-width: 70%;
+  }
+  .wx-msg.right { align-self: flex-end; flex-direction: row-reverse; }
+  .wx-msg-avatar {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: rgba(255,255,255,0.25);
+    color: white; font-size: 11px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .wx-msg-bubble {
+    padding: 8px 12px;
+    background: rgba(255,255,255,0.95);
+    color: #1d1d1f;
+    border-radius: 12px;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+  .wx-msg.right .wx-msg-bubble {
+    background: white;
+  }
+  .wx-msg.urgent .wx-msg-bubble {
+    background: #fff3cd;
+    border: 1px solid #ffc107;
+  }
+  .wx-msg-name { font-size: 10px; opacity: 0.85; margin-bottom: 2px; padding-left: 4px; }
+  .wx-input-bar {
+    margin-top: 14px; padding: 8px 12px;
+    background: rgba(255,255,255,0.95);
+    border-radius: 999px;
+    color: var(--label-3);
+    font-size: 12px;
+  }
+
+  /* ─── 配置面板 ─── */
+  .config-panel {
+    position: absolute;
+    top: 100px; right: 56px;
+    width: 320px;
+    background: var(--bg-elev);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-xl);
+    border: 0.5px solid var(--hairline);
+    overflow: hidden;
+    z-index: 60;
+  }
+  .config-head {
+    padding: 14px 18px;
+    background: var(--bg-sec);
+    border-bottom: 0.5px solid var(--sep);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .config-title { font-size: 13px; font-weight: 700; }
+  .config-count { font-size: 11px; color: var(--label-3); font-family: ui-monospace, monospace; }
+  .config-list { max-height: 360px; overflow-y: auto; }
+  .config-row {
+    display: grid;
+    grid-template-columns: 22px 1fr 56px 18px;
+    gap: 8px; align-items: center;
+    padding: 8px 14px;
+    border-bottom: 0.5px solid var(--sep);
+    font-size: 11px;
+  }
+  .config-row:hover { background: var(--fill-1); }
+  .cfg-num {
+    width: 18px; height: 18px;
+    border-radius: 5px;
+    color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 700;
+    font-family: ui-monospace, monospace;
+  }
+  .config-row[data-n="1"] .cfg-num  { background: var(--slot-1); }
+  .config-row[data-n="2"] .cfg-num  { background: var(--slot-2); }
+  .config-row[data-n="3"] .cfg-num  { background: var(--slot-3); color: #1d1d1f; }
+  .config-row[data-n="4"] .cfg-num  { background: var(--slot-4); }
+  .config-row[data-n="5"] .cfg-num  { background: var(--slot-5); }
+  .config-row[data-n="6"] .cfg-num  { background: var(--slot-6); }
+  .config-row[data-n="7"] .cfg-num  { background: var(--slot-7); }
+  .config-row[data-n="8"] .cfg-num  { background: var(--slot-8); }
+  .config-row[data-n="9"] .cfg-num  { background: var(--slot-9); }
+  .config-row[data-n="10"] .cfg-num { background: var(--slot-10); }
+  .cfg-name {
+    background: transparent; border: none; outline: none;
+    font-size: 12px; color: var(--label);
+    padding: 3px 6px;
+    font-family: inherit;
+    font-weight: 500;
+    width: 100%;
+  }
+  .cfg-name:focus {
+    background: var(--fill-1); border-radius: 4px;
+  }
+  .cfg-hotkey {
+    font-family: ui-monospace, monospace;
+    font-size: 10px;
+    padding: 2px 6px;
+    background: var(--fill-1);
+    border: 0.5px solid var(--hairline);
+    border-radius: 4px;
+    color: var(--label-2);
+    text-align: center;
+    cursor: pointer;
+  }
+  .cfg-hotkey:hover { background: var(--fill-2); }
+  .cfg-status {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+  }
+  .cfg-status.online { background: var(--green); }
+  .cfg-status.silent { background: var(--label-4); }
+
+  .config-foot {
+    padding: 10px 14px;
+    background: var(--bg-sec);
+    border-top: 0.5px solid var(--sep);
+    display: flex; gap: 6px;
+    flex-wrap: wrap;
+  }
+  .cfg-action {
+    padding: 5px 10px;
+    background: var(--fill-1);
+    border: 0.5px solid var(--hairline);
+    border-radius: 5px;
+    font-size: 11px;
+    color: var(--label-2);
+    cursor: pointer;
+    flex: 1;
+    text-align: center;
+  }
+  .cfg-action:hover { background: var(--fill-2); }
+  .cfg-action.primary {
+    background: var(--blue);
+    color: white;
+    border-color: var(--blue);
+  }
+
+  /* ─── Floating annotations ─── */
+  .anno {
+    position: absolute;
+    background: var(--label);
+    color: var(--bg-elev);
+    padding: 7px 12px;
+    border-radius: 8px;
+    font-size: 11px; font-weight: 500;
+    box-shadow: var(--shadow-lg);
+    z-index: 200;
+    line-height: 1.5;
+    max-width: 280px;
+  }
+  .anno-arrow {
+    position: absolute;
+    width: 0; height: 0;
+    border-style: solid;
+  }
+  .anno strong { font-weight: 700; }
+  .anno .kbd {
+    display: inline-block; padding: 1px 5px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 4px;
+    font-family: ui-monospace, monospace;
+    font-size: 10px;
+    margin: 0 1px;
+  }
+
+  /* Pain point banner */
+  .pain-banner {
+    position: absolute;
+    top: 60px; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.85);
+    color: white;
+    padding: 14px 24px;
+    border-radius: 12px;
+    backdrop-filter: blur(20px);
+    box-shadow: var(--shadow-xl);
+    display: flex; gap: 12px; align-items: center;
+    max-width: 800px;
+    z-index: 200;
+  }
+  .pain-icon {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ff9500, #ff3b30);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+  .pain-text {
+    font-size: 12px;
+    line-height: 1.5;
+  }
+  .pain-text strong { color: #ffd60a; }
+
+  /* Bottom legend */
+  .legend {
+    position: relative;
+    max-width: 1400px;
+    margin: 28px auto 0;
+    background: white;
+    border-radius: var(--r-lg);
+    padding: 20px 24px;
+    box-shadow: var(--shadow-md);
+  }
+  @media (prefers-color-scheme: dark) {
+    .legend { background: var(--bg-elev); border: 0.5px solid var(--hairline); }
+  }
+  .legend-title { font-size: 14px; font-weight: 700; margin-bottom: 12px; }
+  .legend-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px 24px;
+  }
+  .legend-item { display: flex; gap: 10px; font-size: 12px; align-items: flex-start; }
+  .legend-num {
+    width: 22px; height: 22px;
+    background: var(--blue); color: white;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700;
+    flex-shrink: 0;
+  }
+  .legend-text strong { font-weight: 700; }
+  .legend-text { color: var(--label-2); line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<div class="desktop">
+
+  <!-- macOS menu bar -->
+  <div class="menubar">
+    <span style="font-weight:600;">🍎</span>
+    <span>Minbar</span>
+    <span>File</span>
+    <span>View</span>
+    <span class="menubar-spacer"></span>
+    <span>★</span>
+    <span>10/10 在线</span>
+    <span>2026/4/27 周一 14:32</span>
+  </div>
+
+  <!-- 痛点说明 banner -->
+  <div class="pain-banner">
+    <div class="pain-icon">🔥</div>
+    <div class="pain-text">
+      <strong>客服监控场景</strong>：公司 VPN 卡，主屏开 CRM 处理工单。<br>
+      右下角 <strong>10 个独立小窗</strong>同时监听不同群消息，未读数实时显示。<br>
+      按 <strong>⌘⌥3</strong> → 第 3 号小窗"放大查看"，看完关闭返回原状态。
+    </div>
+  </div>
+
+  <!-- 主屏：模拟客服 CRM -->
+  <div class="main-screen">
+    <div class="crm-sidebar">
+      <div class="crm-brand">📞 客服中心</div>
+      <div class="crm-nav-item active">📋 我的工单</div>
+      <div class="crm-nav-item">🎫 待处理</div>
+      <div class="crm-nav-item">✅ 已解决</div>
+      <div class="crm-nav-item">📞 转接记录</div>
+      <div class="crm-nav-item">📊 数据看板</div>
+      <div class="crm-nav-item">👥 客户列表</div>
+      <div class="crm-nav-item">⚙️ 设置</div>
+    </div>
+    <div class="crm-content">
+      <div class="crm-header">
+        <div class="crm-title">今日工单</div>
+        <div style="display:flex;gap:8px;">
+          <div class="badge urgent">🔥 3 紧急</div>
+          <div class="badge pending">⏳ 12 待处理</div>
+        </div>
+      </div>
+      <div class="crm-stats">
+        <div class="stat-card"><div class="stat-num red">3</div><div class="stat-label">紧急工单</div></div>
+        <div class="stat-card"><div class="stat-num orange">12</div><div class="stat-label">待处理</div></div>
+        <div class="stat-card"><div class="stat-num green">47</div><div class="stat-label">今日已解决</div></div>
+        <div class="stat-card"><div class="stat-num blue">98%</div><div class="stat-label">SLA 达成率</div></div>
+      </div>
+      <div class="ticket-list">
+        <div class="ticket-row head">
+          <div>工单号</div><div>问题描述</div><div>客户</div><div>时间</div><div>状态</div>
+        </div>
+        <div class="ticket-row">
+          <div class="ticket-id">#T7842</div>
+          <div class="ticket-title">支付失败但已扣款，需要尽快退款</div>
+          <div>张先生</div>
+          <div>14:28</div>
+          <div><span class="badge urgent">紧急</span></div>
+        </div>
+        <div class="ticket-row">
+          <div class="ticket-id">#T7841</div>
+          <div class="ticket-title">无法登录账号，提示验证码错误</div>
+          <div>李女士</div>
+          <div>14:15</div>
+          <div><span class="badge pending">待处理</span></div>
+        </div>
+        <div class="ticket-row">
+          <div class="ticket-id">#T7840</div>
+          <div class="ticket-title">订阅续费失败咨询</div>
+          <div>王先生</div>
+          <div>13:52</div>
+          <div><span class="badge normal">已回复</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 配置面板（右上角） -->
+  <div class="config-panel">
+    <div class="config-head">
+      <div class="config-title">🎛 监控槽位（1–10）</div>
+      <div class="config-count">10 / 10</div>
+    </div>
+    <div class="config-list">
+      <div class="config-row" data-n="1"><div class="cfg-num">1</div><input class="cfg-name" value="客户A·重要群"><div class="cfg-hotkey">⌘⌥1</div><div class="cfg-status online"></div></div>
+      <div class="config-row" data-n="2"><div class="cfg-num">2</div><input class="cfg-name" value="客户B·售后"><div class="cfg-hotkey">⌘⌥2</div><div class="cfg-status online"></div></div>
+      <div class="config-row" data-n="3"><div class="cfg-num">3</div><input class="cfg-name" value="VIP 客户"><div class="cfg-hotkey">⌘⌥3</div><div class="cfg-status online"></div></div>
+      <div class="config-row" data-n="4"><div class="cfg-num">4</div><input class="cfg-name" value="飞书重点客户"><div class="cfg-hotkey">⌘⌥4</div><div class="cfg-status online"></div></div>
+      <div class="config-row" data-n="5"><div class="cfg-num">5</div><input class="cfg-name" value="Slack #support"><div class="cfg-hotkey">⌘⌥5</div><div class="cfg-status online"></div></div>
+      <div class="config-row" data-n="6"><div class="cfg-num">6</div><input class="cfg-name" value="钉钉售后"><div class="cfg-hotkey">⌘⌥6</div><div class="cfg-status online"></div></div>
+      <div class="config-row" data-n="7"><div class="cfg-num">7</div><input class="cfg-name" value="QQ 客户群"><div class="cfg-hotkey">⌘⌥7</div><div class="cfg-status silent"></div></div>
+      <div class="config-row" data-n="8"><div class="cfg-num">8</div><input class="cfg-name" value="邮件支持"><div class="cfg-hotkey">⌘⌥8</div><div class="cfg-status online"></div></div>
+      <div class="config-row" data-n="9"><div class="cfg-num">9</div><input class="cfg-name" value="Jira 工单"><div class="cfg-hotkey">⌘⌥9</div><div class="cfg-status online"></div></div>
+      <div class="config-row" data-n="10"><div class="cfg-num" style="font-size:8px;">10</div><input class="cfg-name" value="数据看板"><div class="cfg-hotkey">⌘⌥0</div><div class="cfg-status online"></div></div>
+    </div>
+    <div class="config-foot">
+      <div class="cfg-action">⊕ 添加</div>
+      <div class="cfg-action">⚙ 全局</div>
+      <div class="cfg-action primary">▶ 全部启动</div>
+    </div>
+  </div>
+
+  <!-- 右下角 10 个监控小窗（10 个 slot 用 5x2 grid，但截图位置 2x5）-->
+  <div class="slots-grid">
+    <div class="slot" data-n="1">
+      <div class="slot-titlebar">
+        <span class="slot-num">1</span>
+        <span class="slot-name">客户A·重要群</span>
+        <span class="slot-hotkey">⌘⌥1</span>
+      </div>
+      <div class="slot-body">
+        <div class="chat-msg"><div class="chat-avatar" style="background:#ff3b30;">王</div><div><span class="chat-name">王经理</span><span class="chat-text">麻烦帮忙看下订单异常</span></div></div>
+        <div class="chat-msg"><div class="chat-avatar" style="background:#0a84ff;">李</div><div><span class="chat-name">李客服</span><span class="chat-text">收到，正在处理</span></div></div>
+      </div>
+      <div class="unread-badge">3</div>
+    </div>
+
+    <div class="slot" data-n="2">
+      <div class="slot-titlebar">
+        <span class="slot-num">2</span>
+        <span class="slot-name">客户B·售后</span>
+        <span class="slot-hotkey">⌘⌥2</span>
+      </div>
+      <div class="slot-body">
+        <div class="chat-msg"><div class="chat-avatar" style="background:#34c759;">陈</div><div><span class="chat-name">陈先生</span><span class="chat-text">退款已收到，谢谢～</span></div></div>
+        <div class="chat-msg"><div class="chat-avatar" style="background:#ff9500;">张</div><div><span class="chat-name">张女士</span><span class="chat-text">物流状态怎么查</span></div></div>
+      </div>
+    </div>
+
+    <div class="slot flash" data-n="3">
+      <div class="slot-titlebar">
+        <span class="slot-num">3</span>
+        <span class="slot-name">VIP 客户</span>
+        <span class="slot-hotkey">⌘⌥3</span>
+      </div>
+      <div class="slot-body">
+        <div class="chat-msg"><div class="chat-avatar" style="background:#bf5af2;">徐</div><div><span class="chat-name">徐总</span><span class="chat-text">紧急：系统打不开</span></div></div>
+        <div class="chat-msg"><div class="chat-avatar" style="background:#bf5af2;">徐</div><div><span class="chat-name">徐总</span><span class="chat-text">影响一笔大单！</span></div></div>
+      </div>
+      <div class="unread-badge">5</div>
+    </div>
+
+    <div class="slot" data-n="4">
+      <div class="slot-titlebar">
+        <span class="slot-num">4</span>
+        <span class="slot-name">飞书·重点客户</span>
+        <span class="slot-hotkey">⌘⌥4</span>
+      </div>
+      <div class="slot-body">
+        <div class="chat-msg"><div class="chat-avatar" style="background:#34c759;">飞</div><div><span class="chat-name">飞书</span><span class="chat-text">@小李 客户咨询新功能</span></div></div>
+      </div>
+      <div class="unread-badge">1</div>
+    </div>
+
+    <div class="slot" data-n="5">
+      <div class="slot-titlebar">
+        <span class="slot-num">5</span>
+        <span class="slot-name">Slack #support</span>
+        <span class="slot-hotkey">⌘⌥5</span>
+      </div>
+      <div class="slot-body">
+        <div class="chat-msg"><div class="chat-avatar" style="background:#5e5ce6;">M</div><div><span class="chat-name">Mike</span><span class="chat-text">API timeout issue?</span></div></div>
+        <div class="chat-msg"><div class="chat-avatar" style="background:#0a84ff;">A</div><div><span class="chat-name">Anna</span><span class="chat-text">checking...</span></div></div>
+      </div>
+    </div>
+
+    <div class="slot" data-n="6">
+      <div class="slot-titlebar">
+        <span class="slot-num">6</span>
+        <span class="slot-name">钉钉售后</span>
+        <span class="slot-hotkey">⌘⌥6</span>
+      </div>
+      <div class="slot-body">
+        <div class="chat-msg"><div class="chat-avatar" style="background:#0a84ff;">钉</div><div><span class="chat-name">@刘姐</span><span class="chat-text">下午会议改 4 点</span></div></div>
+      </div>
+    </div>
+
+    <div class="slot" data-n="7">
+      <div class="slot-titlebar">
+        <span class="slot-num">7</span>
+        <span class="slot-name">QQ 客户群</span>
+        <span class="slot-hotkey">⌘⌥7</span>
+      </div>
+      <div class="slot-body" style="display:flex;align-items:center;justify-content:center;color:var(--label-3);font-size:10px;">
+        ⚪ 暂无新消息
+      </div>
+    </div>
+
+    <div class="slot" data-n="8">
+      <div class="slot-titlebar">
+        <span class="slot-num">8</span>
+        <span class="slot-name">邮件支持</span>
+        <span class="slot-hotkey">⌘⌥8</span>
+      </div>
+      <div class="slot-body">
+        <div class="chat-msg"><div class="chat-avatar" style="background:#5e5ce6;">📧</div><div><span class="chat-name">support@</span><span class="chat-text">新工单 #T7842</span></div></div>
+      </div>
+      <div class="unread-badge">2</div>
+    </div>
+
+    <div class="slot" data-n="9">
+      <div class="slot-titlebar">
+        <span class="slot-num">9</span>
+        <span class="slot-name">Jira 工单</span>
+        <span class="slot-hotkey">⌘⌥9</span>
+      </div>
+      <div class="slot-body">
+        <div class="chat-msg"><div class="chat-avatar" style="background:#0a84ff;">J</div><div><span class="chat-name">Jira</span><span class="chat-text">3 个 bug 待修</span></div></div>
+      </div>
+    </div>
+
+    <div class="slot" data-n="10">
+      <div class="slot-titlebar">
+        <span class="slot-num" style="font-size:8px;">10</span>
+        <span class="slot-name">数据看板</span>
+        <span class="slot-hotkey">⌘⌥0</span>
+      </div>
+      <div class="slot-body" style="background:linear-gradient(135deg,#1a2238,#2a1845);color:white;display:flex;align-items:center;justify-content:center;flex-direction:column;">
+        <div style="font-size:18px;font-weight:700;color:#34c759;">98%</div>
+        <div style="font-size:9px;opacity:0.7;">SLA 实时</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 浮起：第 3 号小窗被 ⌘⌥3 放大 -->
+  <div class="enlarged">
+    <div class="enlarged-titlebar">
+      <div class="enlarged-num">3</div>
+      <div class="enlarged-name">VIP 客户</div>
+      <div class="enlarged-hotkey">⌘⌥3 切换 · ESC 缩回</div>
+    </div>
+    <div class="enlarged-body">
+      <div class="wx-top">
+        <div class="wx-title">VIP 客户群（28）</div>
+        <div class="wx-meta">🔥 5 条新消息</div>
+      </div>
+      <div class="wx-msg-list">
+        <div class="wx-msg">
+          <div class="wx-msg-avatar">徐</div>
+          <div>
+            <div class="wx-msg-name">徐总</div>
+            <div class="wx-msg-bubble urgent">系统打不开，紧急！</div>
+          </div>
+        </div>
+        <div class="wx-msg">
+          <div class="wx-msg-avatar">徐</div>
+          <div>
+            <div class="wx-msg-name">徐总</div>
+            <div class="wx-msg-bubble urgent">影响一笔大单，麻烦尽快！</div>
+          </div>
+        </div>
+        <div class="wx-msg right">
+          <div class="wx-msg-avatar" style="background:#0a84ff;">我</div>
+          <div>
+            <div class="wx-msg-bubble">收到，立刻为您处理 🙋</div>
+          </div>
+        </div>
+        <div class="wx-msg right">
+          <div class="wx-msg-avatar" style="background:#0a84ff;">我</div>
+          <div>
+            <div class="wx-msg-bubble">已通知技术团队，5 分钟内回复</div>
+          </div>
+        </div>
+      </div>
+      <div class="wx-input-bar">💬 输入消息...</div>
+    </div>
+  </div>
+
+  <!-- 注释 -->
+  <div class="anno" style="bottom: 220px; right: 480px; max-width: 200px;">
+    <strong>📌 ⌘⌥3 触发</strong> → 弹出放大窗口居中浮起<br>
+    再按一次 / ESC → 缩回原位置
+  </div>
+
+</div>
+
+<!-- 底部图例 -->
+<div class="legend">
+  <div class="legend-title">📖 监控槽位 · 关键功能</div>
+  <div class="legend-grid">
+    <div class="legend-item">
+      <div class="legend-num">1</div>
+      <div class="legend-text"><strong>10 个独立监控小窗</strong><br>右下角 2×5 排列，自动堆叠，可拖动重排</div>
+    </div>
+    <div class="legend-item">
+      <div class="legend-num">2</div>
+      <div class="legend-text"><strong>每槽自定义</strong><br>备注名称 / URL / 放大快捷键 / 模式 / 代理</div>
+    </div>
+    <div class="legend-item">
+      <div class="legend-num">3</div>
+      <div class="legend-text"><strong>独立代理</strong><br>解决"公司 VPN 卡"：每个槽位走自己代理或直连</div>
+    </div>
+    <div class="legend-item">
+      <div class="legend-num">4</div>
+      <div class="legend-text"><strong>未读数显示</strong><br>红色徽章 · DOM 抓取 / 通知 API / 自定义脚本</div>
+    </div>
+    <div class="legend-item">
+      <div class="legend-num">5</div>
+      <div class="legend-text"><strong>放大快捷键 ⌘⌥1~⌘⌥0</strong><br>瞬间放大对应槽位，再按 / ESC 缩回</div>
+    </div>
+    <div class="legend-item">
+      <div class="legend-num">6</div>
+      <div class="legend-text"><strong>主屏不被打扰</strong><br>小窗常驻置顶但不抢焦点 · CRM 主屏正常工作</div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Minbar · D 工作模式 (Work Mode)</title>
+<style>
+  :root {
+    --bg:        #0e0e10;
+    --bg-2:      #18181b;
+    --bg-3:      #1f1f23;
+    --bg-elev:   #1c1c1f;
+    --label:     #ededed;
+    --label-2:   #a1a1aa;
+    --label-3:   #71717a;
+    --label-4:   #52525b;
+    --sep:       rgba(255,255,255,0.06);
+    --hairline:  rgba(255,255,255,0.08);
+    --fill-1:    rgba(255,255,255,0.04);
+    --fill-2:    rgba(255,255,255,0.08);
+    --accent:    #4ade80;        /* dev-tool green */
+    --accent-bg: rgba(74,222,128,0.10);
+    --warn:      #f59e0b;
+    --error:     #ef4444;
+    --info:      #38bdf8;
+  }
+
+  *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", sans-serif;
+    background: var(--bg);
+    color: var(--label);
+    font-size: 13px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+    -webkit-user-select: none;
+    min-height: 100vh;
+  }
+  .mono { font-family: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", monospace; }
+
+  /* ─── Top Frame: window chrome ─── */
+  .frame {
+    display: grid;
+    grid-template-rows: 32px 36px 40px 1fr;
+    height: 100vh;
+  }
+
+  /* Row 1: Title bar with tabs */
+  .titlebar {
+    display: flex; align-items: stretch;
+    background: var(--bg-2);
+    border-bottom: 1px solid var(--sep);
+    padding-left: 12px;
+  }
+  .traffic { display: flex; align-items: center; gap: 6px; padding: 0 12px 0 0; }
+  .traffic-dot { width: 11px; height: 11px; border-radius: 50%; }
+  .traffic-dot.r { background: #ff5f57; }
+  .traffic-dot.y { background: #febc2e; }
+  .traffic-dot.g { background: #28c840; }
+
+  .tabs-bar {
+    flex: 1; display: flex; align-items: stretch;
+    overflow-x: auto;
+  }
+  .tab {
+    display: flex; align-items: center; gap: 6px;
+    padding: 0 10px;
+    border-right: 1px solid var(--sep);
+    font-size: 12px;
+    color: var(--label-2);
+    cursor: pointer;
+    min-width: 140px; max-width: 200px;
+    position: relative;
+  }
+  .tab.active {
+    background: var(--bg);
+    color: var(--label);
+  }
+  .tab.active::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: -1px;
+    height: 2px; background: var(--accent);
+  }
+  .tab:hover:not(.active) { background: var(--fill-1); }
+  .tab-favicon { width: 14px; height: 14px; flex-shrink: 0; border-radius: 3px; }
+  .tab-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+  .tab-close {
+    width: 16px; height: 16px; border-radius: 3px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--label-3); font-size: 10px;
+  }
+  .tab-close:hover { background: var(--fill-2); color: var(--label); }
+  .tab-add {
+    padding: 0 10px;
+    color: var(--label-3); cursor: pointer;
+    display: flex; align-items: center;
+    font-size: 14px;
+  }
+  .tab-add:hover { color: var(--label); background: var(--fill-1); }
+
+  .titlebar-right {
+    display: flex; align-items: center; gap: 4px;
+    padding: 0 8px;
+  }
+  .icon-btn {
+    width: 28px; height: 22px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 5px; cursor: pointer;
+    color: var(--label-2); font-size: 13px;
+  }
+  .icon-btn:hover { background: var(--fill-1); color: var(--label); }
+  .mode-toggle {
+    display: flex; align-items: center; gap: 4px;
+    padding: 2px 8px 2px 4px;
+    background: var(--bg-3); border-radius: 12px;
+    cursor: pointer;
+    font-size: 11px; color: var(--label-2);
+    border: 1px solid var(--sep);
+  }
+  .mode-toggle .mode-dot {
+    width: 14px; height: 14px; border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 0 3px rgba(74,222,128,0.15);
+  }
+
+  /* Row 2: Address bar */
+  .addrbar {
+    display: flex; align-items: center; gap: 6px;
+    padding: 0 10px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--sep);
+  }
+  .nav-btn {
+    width: 28px; height: 22px; border-radius: 5px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--label-2); cursor: pointer; font-size: 13px;
+  }
+  .nav-btn:hover { background: var(--fill-1); color: var(--label); }
+  .url-input {
+    flex: 1;
+    padding: 4px 12px;
+    background: var(--bg-3);
+    border: 1px solid var(--sep);
+    border-radius: 5px;
+    color: var(--label);
+    font-size: 12px;
+    outline: none;
+    font-family: ui-monospace, "SF Mono", monospace;
+  }
+  .url-input:focus { border-color: var(--accent); }
+  .proxy-chip {
+    display: flex; align-items: center; gap: 4px;
+    padding: 3px 8px;
+    background: var(--accent-bg);
+    color: var(--accent);
+    border-radius: 4px;
+    font-size: 11px; font-weight: 600;
+    cursor: pointer;
+    font-family: ui-monospace, monospace;
+  }
+  .proxy-chip-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+
+  /* Row 3: Sub status bar */
+  .statusbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 12px;
+    background: var(--bg-2);
+    border-bottom: 1px solid var(--sep);
+    font-size: 11px;
+    color: var(--label-3);
+    font-family: ui-monospace, "SF Mono", monospace;
+  }
+  .status-left, .status-right { display: flex; align-items: center; gap: 14px; }
+  .status-item { display: flex; align-items: center; gap: 4px; }
+  .status-item-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent);
+  }
+  .status-item-dot.warn { background: var(--warn); }
+
+  /* Row 4: Main content area */
+  .main {
+    overflow-y: auto;
+    padding: 24px;
+  }
+  .page { display: none; max-width: 1100px; margin: 0 auto; }
+  .page.active { display: block; }
+
+  .h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.4px; margin-bottom: 4px; }
+  .h-meta { font-size: 11px; color: var(--label-3); margin-bottom: 24px; font-family: ui-monospace, monospace; }
+
+  /* Hero widgets — work mode style */
+  .widgets {
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px; margin-bottom: 24px;
+  }
+  .w-card {
+    background: var(--bg-elev);
+    border: 1px solid var(--sep);
+    border-radius: 8px;
+    padding: 16px;
+    position: relative;
+  }
+  .w-label {
+    font-size: 10px; font-weight: 600;
+    color: var(--label-3); letter-spacing: 1px;
+    text-transform: uppercase;
+    font-family: ui-monospace, monospace;
+    margin-bottom: 8px;
+  }
+  .w-value { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; line-height: 1; }
+  .w-sub { font-size: 11px; color: var(--label-3); margin-top: 6px; font-family: ui-monospace, monospace; }
+  .w-card.weather { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); }
+  .w-card.weather .w-value { color: #38bdf8; }
+
+  /* Section */
+  .section-title {
+    font-size: 11px; font-weight: 700;
+    color: var(--label-3); letter-spacing: 1.5px;
+    text-transform: uppercase;
+    font-family: ui-monospace, monospace;
+    padding: 16px 4px 10px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .section-meta { font-weight: 400; color: var(--label-4); }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 6px;
+  }
+  .card {
+    background: var(--bg-elev);
+    border: 1px solid var(--sep);
+    border-radius: 6px;
+    padding: 12px 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+  }
+  .card:hover {
+    background: var(--bg-3);
+    border-color: var(--label-4);
+    transform: translateY(-1px);
+  }
+  .card-logo {
+    width: 36px; height: 36px;
+    border-radius: 6px;
+    background: var(--fill-2);
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+  }
+  .card-logo img { width: 22px; height: 22px; object-fit: contain; }
+  .card-name { font-size: 11px; color: var(--label-2); }
+
+  /* History rows */
+  .log-row {
+    display: grid;
+    grid-template-columns: 60px 24px 1fr 90px;
+    align-items: center; gap: 12px;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--sep);
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .log-row:hover { background: var(--fill-1); }
+  .log-time { color: var(--label-3); font-family: ui-monospace, monospace; font-size: 11px; }
+  .log-icon { width: 18px; height: 18px; border-radius: 3px; background: var(--fill-2); display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  .log-icon img { width: 14px; height: 14px; }
+  .log-info-title { color: var(--label); }
+  .log-info-url { font-family: ui-monospace, monospace; color: var(--label-3); font-size: 10px; }
+  .log-tab { color: var(--label-3); font-size: 10px; font-family: ui-monospace, monospace; }
+
+  /* Proxy panel */
+  .panel {
+    background: var(--bg-elev);
+    border: 1px solid var(--sep);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+  .panel-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+  .panel-sub { font-size: 11px; color: var(--label-3); margin-bottom: 14px; }
+
+  .field-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .field-label { width: 80px; font-size: 12px; color: var(--label-2); }
+  .field-input {
+    background: var(--bg-3);
+    border: 1px solid var(--sep);
+    border-radius: 5px;
+    padding: 5px 10px;
+    color: var(--label);
+    font-size: 12px;
+    font-family: ui-monospace, monospace;
+    outline: none;
+    flex: 1;
+  }
+  .field-input:focus { border-color: var(--accent); }
+  .radio-group { display: flex; gap: 16px; margin-bottom: 12px; }
+  .radio-item { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12px; }
+  .radio-dot {
+    width: 14px; height: 14px; border: 1.5px solid var(--label-3); border-radius: 50%;
+    position: relative;
+  }
+  .radio-item.on .radio-dot { border-color: var(--accent); }
+  .radio-item.on .radio-dot::after {
+    content: ""; position: absolute; inset: 2px;
+    border-radius: 50%; background: var(--accent);
+  }
+
+  .test-btn {
+    padding: 5px 12px;
+    background: var(--accent-bg);
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    border-radius: 5px;
+    font-size: 12px; font-weight: 600;
+    cursor: pointer;
+    font-family: ui-monospace, monospace;
+  }
+
+  .kbd {
+    display: inline-block; padding: 1px 6px;
+    border: 1px solid var(--sep); border-bottom-width: 2px;
+    border-radius: 4px;
+    background: var(--bg-3);
+    font-family: ui-monospace, monospace; font-size: 11px;
+    color: var(--label-2);
+    margin: 0 1px;
+  }
+
+  /* Top page nav */
+  .pagenav {
+    display: flex; align-items: center; gap: 4px;
+    margin-bottom: 18px;
+  }
+  .pagenav-item {
+    padding: 6px 14px; border-radius: 5px;
+    font-size: 12px; color: var(--label-2); cursor: pointer;
+    font-weight: 500;
+  }
+  .pagenav-item:hover { background: var(--fill-1); color: var(--label); }
+  .pagenav-item.active { background: var(--bg-elev); color: var(--accent); border: 1px solid var(--sep); }
+</style>
+</head>
+<body>
+
+<div class="frame">
+
+  <!-- Row 1: Tabs -->
+  <div class="titlebar">
+    <div class="traffic">
+      <div class="traffic-dot r"></div>
+      <div class="traffic-dot y"></div>
+      <div class="traffic-dot g"></div>
+    </div>
+    <div class="tabs-bar">
+      <div class="tab active">
+        <img class="tab-favicon" src="https://cdn.simpleicons.org/github/4ade80">
+        <span class="tab-title">GitHub</span>
+        <div class="tab-close">×</div>
+      </div>
+      <div class="tab">
+        <img class="tab-favicon" src="https://cdn.simpleicons.org/openai/a1a1aa">
+        <span class="tab-title">ChatGPT</span>
+        <div class="tab-close">×</div>
+      </div>
+      <div class="tab">
+        <img class="tab-favicon" src="https://cdn.simpleicons.org/zhihu/0084FF">
+        <span class="tab-title">知乎 - 有问题，就会有答案</span>
+        <div class="tab-close">×</div>
+      </div>
+      <div class="tab">
+        <img class="tab-favicon" src="https://cdn.simpleicons.org/stackoverflow/F58025">
+        <span class="tab-title">Stack Overflow</span>
+        <div class="tab-close">×</div>
+      </div>
+      <div class="tab-add">+</div>
+    </div>
+    <div class="titlebar-right">
+      <div class="mode-toggle" title="工作模式 / 摸鱼模式">
+        <span class="mode-dot"></span>
+        <span class="mono">WORK</span>
+      </div>
+      <div class="icon-btn" title="新窗口（独立代理）">⊕</div>
+      <div class="icon-btn" title="设置">⚙</div>
+    </div>
+  </div>
+
+  <!-- Row 2: Address bar -->
+  <div class="addrbar">
+    <div class="nav-btn">←</div>
+    <div class="nav-btn">→</div>
+    <div class="nav-btn">↻</div>
+    <div class="nav-btn">⌂</div>
+    <input class="url-input" value="https://github.com/orgs/anthropics/repositories" />
+    <div class="proxy-chip" title="点击切换代理">
+      <span class="proxy-chip-dot"></span>
+      <span>SOCKS5 :7890</span>
+    </div>
+  </div>
+
+  <!-- Row 3: Status bar -->
+  <div class="statusbar">
+    <div class="status-left">
+      <div class="status-item"><span class="status-item-dot"></span>READY</div>
+      <div class="status-item">UTF-8</div>
+      <div class="status-item">200 OK</div>
+      <div class="status-item">142ms</div>
+    </div>
+    <div class="status-right">
+      <div class="status-item">w1 · 3 tabs</div>
+      <div class="status-item">|</div>
+      <div class="status-item">history: 47/7d</div>
+      <div class="status-item">|</div>
+      <div class="status-item" id="ts">14:32:08 · ☀️ 22°</div>
+    </div>
+  </div>
+
+  <!-- Row 4: Main content -->
+  <div class="main">
+
+    <div class="pagenav">
+      <div class="pagenav-item active" onclick="go(this,'home')">HOME</div>
+      <div class="pagenav-item" onclick="go(this,'history')">HISTORY</div>
+      <div class="pagenav-item" onclick="go(this,'settings')">SETTINGS</div>
+      <div class="pagenav-item" onclick="go(this,'about')">ABOUT</div>
+    </div>
+
+    <!-- HOME -->
+    <div class="page active" id="home">
+      <div class="h1">~/minbar/workspace</div>
+      <div class="h-meta">// v1.3.0 · build #284 · 4 tabs · proxy=socks5://127.0.0.1:7890</div>
+
+      <div class="widgets">
+        <div class="w-card">
+          <div class="w-label">CURRENT TIME</div>
+          <div class="w-value mono" id="clock">14:32:08</div>
+          <div class="w-sub">2026-04-27 · MON</div>
+        </div>
+        <div class="w-card weather">
+          <div class="w-label">SHENZHEN</div>
+          <div class="w-value mono">22°C ☀️</div>
+          <div class="w-sub">CLEAR · WIND 2.1 m/s · RH 62%</div>
+        </div>
+        <div class="w-card">
+          <div class="w-label">SESSION</div>
+          <div class="w-value mono">47</div>
+          <div class="w-sub">visits this week · ↑ 12% vs last</div>
+        </div>
+      </div>
+
+      <div class="section-title">
+        <span>// 娱乐区</span>
+        <span class="section-meta">10 sites</span>
+      </div>
+      <div class="grid">
+        <div class="card"><div class="card-logo"><img src="https://cdn.simpleicons.org/bilibili/00A1D6"></div><div class="card-name">哔哩哔哩</div></div>
+        <div class="card"><div class="card-logo"><img src="https://cdn.simpleicons.org/youtube/FF0000"></div><div class="card-name">YouTube</div></div>
+        <div class="card"><div class="card-logo"><img src="https://cdn.simpleicons.org/tiktok/ffffff"></div><div class="card-name">抖音</div></div>
+        <div class="card"><div class="card-logo"><img src="https://icons.duckduckgo.com/ip3/xiaohongshu.com.ico"></div><div class="card-name">小红书</div></div>
+        <div class="card"><div class="card-logo"><img src="https://cdn.simpleicons.org/sinaweibo/E6162D"></div><div class="card-name">微博</div></div>
+        <div class="card"><div class="card-logo"><img src="https://cdn.simpleicons.org/x/ffffff"></div><div class="card-name">X</div></div>
+        <div class="card"><div class="card-logo"><img src="https://cdn.simpleicons.org/instagram/E4405F"></div><div class="card-name">Instagram</div></div>
+        <div class="card"><div class="card-logo"><img src="https://cdn.simpleicons.org/netflix/E50914"></div><div class="card-name">Netflix</div></div>
+      </div>
+
+      <div class="section-title">
+        <span>// 互联网技术</span>
+        <span class="section-meta">10 sites</span>
+      </div>
+      <div class="grid">
+        <div class="card"><div class="card-logo"><img src="https://cdn.simpleicons.org/github/ffffff"></div><div class="card-name">GitHub</div></div>
+        <div class="card"><div class="card-logo"><img src="https://cdn.simpleicons.org/stackoverflow/F58025"></div><div class="card-name">StackOverflow</div></div>
+        <div class="card"><div class="card-logo"><img src="https://icons.duckduckgo.com/ip3/juejin.cn.ico"></div><div class="card-name">掘金</div></div>
+        <div class="card"><div class="card-logo"><img src="https://icons.duckduckgo.com/ip3/v2ex.com.ico"></div><div class="card-name">V2EX</div></div>
+        <div class="card"><div class="card-logo"><img src="https://cdn.simpleicons.org/ycombinator/FF6600"></div><div class="card-name">HackerNews</div></div>
+        <div class="card"><div class="card-logo"><img src="https://cdn.simpleicons.org/zhihu/0084FF"></div><div class="card-name">知乎</div></div>
+        <div class="card"><div class="card-logo"><img src="https://cdn.simpleicons.org/leetcode/FFA116"></div><div class="card-name">LeetCode</div></div>
+        <div class="card"><div class="card-logo"><img src="https://cdn.simpleicons.org/openai/ffffff"></div><div class="card-name">ChatGPT</div></div>
+      </div>
+
+      <div class="section-title">
+        <span>// 炒币</span>
+        <span class="section-meta">8 sites</span>
+      </div>
+      <div class="grid">
+        <div class="card"><div class="card-logo"><img src="https://cdn.simpleicons.org/binance/F0B90B"></div><div class="card-name">币安</div></div>
+        <div class="card"><div class="card-logo"><img src="https://icons.duckduckgo.com/ip3/okx.com.ico"></div><div class="card-name">OKX</div></div>
+        <div class="card"><div class="card-logo"><img src="https://cdn.simpleicons.org/coinmarketcap/ffffff"></div><div class="card-name">CMC</div></div>
+        <div class="card"><div class="card-logo"><img src="https://cdn.simpleicons.org/tradingview/2962FF"></div><div class="card-name">TradingView</div></div>
+      </div>
+    </div>
+
+    <!-- HISTORY -->
+    <div class="page" id="history">
+      <div class="h1">// history.log</div>
+      <div class="h-meta">tail -f ~/.minbar-data/history.json · auto-rotate 7d · entries=47</div>
+
+      <div class="panel" style="padding:0; overflow:hidden;">
+        <div class="log-row" style="background:var(--bg-3); color:var(--label-3); font-family:ui-monospace,monospace;">
+          <div>TIME</div><div></div><div>URL</div><div>WINDOW</div>
+        </div>
+        <div class="log-row">
+          <div class="log-time">14:30:12</div>
+          <div class="log-icon"><img src="https://cdn.simpleicons.org/github/ffffff"></div>
+          <div><div class="log-info-title">GitHub - Where developers build</div><div class="log-info-url">github.com/orgs/anthropics</div></div>
+          <div class="log-tab">w1·t1</div>
+        </div>
+        <div class="log-row">
+          <div class="log-time">14:17:45</div>
+          <div class="log-icon"><img src="https://cdn.simpleicons.org/bilibili/00A1D6"></div>
+          <div><div class="log-info-title">哔哩哔哩 - 干杯～</div><div class="log-info-url">m.bilibili.com</div></div>
+          <div class="log-tab">w2·t1</div>
+        </div>
+        <div class="log-row">
+          <div class="log-time">13:32:01</div>
+          <div class="log-icon"><img src="https://cdn.simpleicons.org/openai/ffffff"></div>
+          <div><div class="log-info-title">ChatGPT</div><div class="log-info-url">chat.openai.com</div></div>
+          <div class="log-tab">w1·t2</div>
+        </div>
+        <div class="log-row">
+          <div class="log-time">YESTERDAY</div>
+          <div class="log-icon"><img src="https://icons.duckduckgo.com/ip3/xiaohongshu.com.ico"></div>
+          <div><div class="log-info-title">小红书</div><div class="log-info-url">xiaohongshu.com</div></div>
+          <div class="log-tab">w2·t1</div>
+        </div>
+        <div class="log-row">
+          <div class="log-time">YESTERDAY</div>
+          <div class="log-icon"><img src="https://cdn.simpleicons.org/coinmarketcap/ffffff"></div>
+          <div><div class="log-info-title">CoinMarketCap</div><div class="log-info-url">coinmarketcap.com</div></div>
+          <div class="log-tab">w1·t1</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="page" id="settings">
+      <div class="h1">// config</div>
+      <div class="h-meta">~/.minbar/config.json · 改动立即生效</div>
+
+      <div class="panel">
+        <div class="panel-title">🌐 当前窗口代理</div>
+        <div class="panel-sub">每个窗口可独立配置代理 · 只影响本窗口的网络流量 · 支持绕过系统 VPN</div>
+        <div class="radio-group">
+          <div class="radio-item"><span class="radio-dot"></span> 直连</div>
+          <div class="radio-item"><span class="radio-dot"></span> 系统代理</div>
+          <div class="radio-item on"><span class="radio-dot"></span> 自定义代理</div>
+          <div class="radio-item"><span class="radio-dot"></span> 无痕模式</div>
+        </div>
+        <div class="field-row">
+          <div class="field-label">类型</div>
+          <select class="field-input mono"><option>SOCKS5</option><option>HTTP</option><option>HTTPS</option></select>
+        </div>
+        <div class="field-row">
+          <div class="field-label">主机</div>
+          <input class="field-input mono" value="127.0.0.1" />
+        </div>
+        <div class="field-row">
+          <div class="field-label">端口</div>
+          <input class="field-input mono" value="7890" />
+        </div>
+        <div class="field-row" style="margin-top:14px; gap:12px;">
+          <button class="test-btn">测试连接</button>
+          <span style="color:var(--accent);font-family:ui-monospace,monospace;font-size:11px;">✓ 连接成功 · 142ms · 出口 IP: 103.91.x.x</span>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">🪟 多窗口管理</div>
+        <div class="panel-sub">每个窗口独立 Cookie / 缓存 / 代理 · 互不干扰</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <div style="display:grid;grid-template-columns:24px 1fr auto auto;gap:10px;align-items:center;padding:8px 12px;background:var(--bg-3);border-radius:5px;">
+            <span class="proxy-chip-dot" style="background:var(--accent);"></span>
+            <span style="font-size:12px;">w1 (当前) · WORK</span>
+            <span class="mono" style="font-size:11px;color:var(--label-3);">SOCKS5 :7890</span>
+            <span class="mono" style="font-size:11px;color:var(--label-3);">3 tabs</span>
+          </div>
+          <div style="display:grid;grid-template-columns:24px 1fr auto auto;gap:10px;align-items:center;padding:8px 12px;background:var(--bg-elev);border-radius:5px;">
+            <span class="proxy-chip-dot" style="background:var(--info);"></span>
+            <span style="font-size:12px;">w2 · SLACK</span>
+            <span class="mono" style="font-size:11px;color:var(--label-3);">DIRECT (直连)</span>
+            <span class="mono" style="font-size:11px;color:var(--label-3);">2 tabs</span>
+          </div>
+          <button class="test-btn" style="align-self:flex-start;margin-top:6px;">⊕ 新建窗口</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">⌨️ 快捷键</div>
+        <div class="panel-sub">
+          <div style="margin-bottom:4px;"><span class="kbd">⌥</span><span class="kbd">~</span> 显示/隐藏当前窗口</div>
+          <div style="margin-bottom:4px;"><span class="kbd">⌘</span><span class="kbd">T</span> 新标签页</div>
+          <div style="margin-bottom:4px;"><span class="kbd">⌘</span><span class="kbd">⇧</span><span class="kbd">N</span> 新窗口（独立代理）</div>
+          <div style="margin-bottom:4px;"><span class="kbd">⌘</span><span class="kbd">L</span> 聚焦地址栏</div>
+          <div><span class="kbd">⌘</span><span class="kbd">⌥</span><span class="kbd">Q</span> 退出</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ABOUT -->
+    <div class="page" id="about">
+      <div class="h1">// about</div>
+      <div class="h-meta">Minbar v1.3.0 · 2026.04 · macOS 11+ Apple Silicon</div>
+
+      <div class="panel">
+        <div class="panel-title">🎯 开发目的</div>
+        <div class="panel-sub" style="line-height:1.7;color:var(--label-2);font-size:13px;">
+          工作间隙偷得浮生半日闲。常驻菜单栏的小浮窗浏览器。<br>
+          支持多 Tab、多窗口、独立代理 — 一个窗口走 VPN 看 GitHub，<br>
+          另一个窗口直连看 B 站，互不干扰。<br>
+          数据本地存储，与 Safari 完全隔离。
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">📂 数据存储（独立目录）</div>
+        <div class="panel-sub mono" style="line-height:1.8;color:var(--label-2);">
+          ~/.minbar/config.json &nbsp;<span style="color:var(--label-3);">// 用户配置</span><br>
+          ~/.minbar-data/history.json &nbsp;<span style="color:var(--label-3);">// 7d 自动清理</span><br>
+          ~/.minbar-data/webdata/{w1,w2,...}/ &nbsp;<span style="color:var(--label-3);">// 每窗口独立 Cookie/Cache</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function go(el, id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.pagenav-item').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (el) el.classList.add('active');
+}
+function tickClock() {
+  const n = new Date();
+  const t = `${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}:${String(n.getSeconds()).padStart(2,'0')}`;
+  document.getElementById('clock').textContent = t;
+  document.getElementById('ts').textContent = `${t} · ☀️ 22°`;
+}
+tickClock(); setInterval(tickClock, 1000);
+</script>
+</body>
+</html>

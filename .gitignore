@@ -1,0 +1,40 @@
+# Build artifacts
+build/
+dist/
+*.egg-info/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# macOS
+.DS_Store
+._*
+*.swp
+*.swo
+*~
+
+# IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# Config
+.meowser/
+config.json
+
+# Test outputs
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Temporary
+*.tmp
+temp/

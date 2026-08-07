@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Meowser · 启动器 · L Linear/Raycast 风</title>
+<style>
+  *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", sans-serif;
+    background: #5b8aa8;
+    background: linear-gradient(135deg, #1a1d2e 0%, #2a1845 50%, #1a2238 100%);
+    color: #e6e6eb;
+    -webkit-font-smoothing: antialiased;
+    -webkit-user-select: none;
+    font-size: 13px;
+    min-height: 100vh;
+    padding: 60px 40px;
+    display: flex; gap: 40px;
+    align-items: flex-start; justify-content: center;
+  }
+
+  /* Launcher */
+  .win {
+    width: 720px;
+    background: #161618;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.5), 0 0 0 0.5px rgba(255,255,255,0.06);
+  }
+  .titlebar {
+    height: 38px;
+    background: #1c1c1e;
+    border-bottom: 0.5px solid rgba(255,255,255,0.06);
+    display: flex; align-items: center;
+    padding: 0 14px;
+  }
+  .traffic { display: flex; gap: 8px; }
+  .traffic-light { width: 12px; height: 12px; border-radius: 50%; }
+  .traffic-r { background: #ff5f57; }
+  .traffic-y { background: #febc2e; }
+  .traffic-g { background: #28c840; }
+  .titlebar-cmd {
+    flex: 1; margin: 0 14px;
+    height: 26px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 6px;
+    border: 0.5px solid rgba(255,255,255,0.08);
+    display: flex; align-items: center;
+    padding: 0 10px;
+    font-family: ui-monospace, "SF Mono", monospace;
+    font-size: 11px;
+    color: rgba(255,255,255,0.5);
+  }
+  .titlebar-cmd .kbd {
+    margin-left: auto;
+    padding: 1px 6px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 3px;
+    font-size: 10px;
+  }
+
+  /* Header */
+  .header {
+    padding: 18px 20px 12px;
+    border-bottom: 0.5px solid rgba(255,255,255,0.06);
+  }
+  .h-row {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 4px;
+  }
+  .h-title {
+    font-size: 13px; font-weight: 700;
+    color: rgba(255,255,255,0.95);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .h-count {
+    font-family: ui-monospace, monospace;
+    font-size: 10px;
+    color: rgba(255,255,255,0.4);
+    padding: 2px 7px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 4px;
+  }
+  .h-actions { display: flex; gap: 4px; }
+  .pill-btn {
+    padding: 4px 10px;
+    background: rgba(255,255,255,0.06);
+    border: 0.5px solid rgba(255,255,255,0.10);
+    border-radius: 5px;
+    font-size: 11px;
+    color: rgba(255,255,255,0.85);
+    cursor: pointer;
+    display: flex; align-items: center; gap: 4px;
+    font-family: inherit;
+  }
+  .pill-btn.primary {
+    background: rgba(74,222,128,0.12);
+    color: #4ade80;
+    border-color: rgba(74,222,128,0.3);
+  }
+  .pill-btn:hover { background: rgba(255,255,255,0.10); }
+
+  /* Profile list */
+  .list {
+    background: #0e0e10;
+    padding: 8px 0;
+  }
+  .pf {
+    display: grid;
+    grid-template-columns: 28px 1fr 80px 100px 80px;
+    align-items: center; gap: 12px;
+    padding: 10px 20px;
+    cursor: pointer;
+    border-bottom: 0.5px solid rgba(255,255,255,0.04);
+    font-size: 12px;
+  }
+  .pf:hover { background: rgba(255,255,255,0.03); }
+  .pf-emoji {
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    background: rgba(255,255,255,0.06);
+  }
+  .pf-info { min-width: 0; }
+  .pf-name {
+    font-size: 13px; font-weight: 600;
+    color: white;
+    margin-bottom: 2px;
+  }
+  .pf-note {
+    font-size: 11px;
+    color: rgba(255,255,255,0.45);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .pf-mode {
+    font-size: 10px; font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 999px;
+    text-align: center;
+    font-family: ui-monospace, monospace;
+  }
+  .pf-mode.work { color: #5dade2; background: rgba(93,173,226,0.10); }
+  .pf-mode.slack { color: #ec4899; background: rgba(236,72,153,0.10); }
+  .pf-proxy {
+    font-family: ui-monospace, "SF Mono", monospace;
+    font-size: 10px;
+    color: rgba(255,255,255,0.55);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .pf-proxy.direct { color: rgba(255,255,255,0.3); }
+  .pf-proxy.via { color: #4ade80; }
+  .pf-launch {
+    padding: 5px 0;
+    background: #4ade80;
+    color: #0e0e10;
+    border: none; border-radius: 5px;
+    font-size: 11px; font-weight: 700;
+    cursor: pointer;
+    font-family: ui-monospace, monospace;
+  }
+  .pf-launch:hover { background: #3ec873; }
+
+  /* List header */
+  .list-head {
+    display: grid;
+    grid-template-columns: 28px 1fr 80px 100px 80px;
+    align-items: center; gap: 12px;
+    padding: 6px 20px;
+    color: rgba(255,255,255,0.35);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-family: ui-monospace, monospace;
+    border-bottom: 0.5px solid rgba(255,255,255,0.06);
+  }
+
+  /* Tip strip */
+  .tip {
+    padding: 12px 20px;
+    background: linear-gradient(135deg, rgba(255,149,0,0.10) 0%, rgba(255,59,48,0.10) 100%);
+    border-top: 0.5px solid rgba(255,149,0,0.20);
+    display: flex; gap: 12px; align-items: center;
+  }
+  .tip-icon {
+    width: 28px; height: 28px;
+    border-radius: 7px;
+    background: linear-gradient(135deg, #ff9500, #ff3b30);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+  .tip-text { flex: 1; font-size: 11px; line-height: 1.5; }
+  .tip-text b { color: #ffd60a; }
+  .tip-btn {
+    padding: 5px 10px;
+    background: rgba(255,255,255,0.10);
+    border: 0.5px solid rgba(255,255,255,0.15);
+    border-radius: 5px;
+    color: white; font-size: 11px; font-weight: 600;
+    cursor: pointer;
+    font-family: ui-monospace, monospace;
+  }
+
+  /* Footer */
+  .footer {
+    padding: 10px 20px;
+    background: #0e0e10;
+    border-top: 0.5px solid rgba(255,255,255,0.06);
+    display: flex; justify-content: space-between;
+    font-family: ui-monospace, "SF Mono", monospace;
+    font-size: 10px;
+    color: rgba(255,255,255,0.35);
+  }
+
+  /* ─── 编辑面板（侧滑出来）─── */
+  .edit-panel {
+    width: 360px;
+    background: #161618;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.5), 0 0 0 0.5px rgba(255,255,255,0.06);
+  }
+  .ep-head {
+    padding: 16px 20px;
+    border-bottom: 0.5px solid rgba(255,255,255,0.06);
+  }
+  .ep-h {
+    font-size: 13px; font-weight: 700;
+    color: white;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .ep-h-icon {
+    width: 24px; height: 24px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.06);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+  }
+  .ep-sub {
+    font-size: 10px; color: rgba(255,255,255,0.4);
+    margin-top: 4px;
+    font-family: ui-monospace, monospace;
+  }
+  .ep-section {
+    padding: 14px 20px;
+    border-bottom: 0.5px solid rgba(255,255,255,0.04);
+  }
+  .ep-row {
+    margin-bottom: 12px;
+  }
+  .ep-row:last-child { margin-bottom: 0; }
+  .ep-label {
+    font-size: 10px; font-weight: 600;
+    color: rgba(255,255,255,0.4);
+    text-transform: uppercase; letter-spacing: 0.5px;
+    margin-bottom: 6px;
+    font-family: ui-monospace, monospace;
+  }
+  .ep-input {
+    width: 100%;
+    padding: 7px 10px;
+    background: rgba(255,255,255,0.04);
+    border: 0.5px solid rgba(255,255,255,0.08);
+    border-radius: 5px;
+    color: white;
+    font-size: 12px;
+    outline: none;
+    font-family: inherit;
+  }
+  .ep-input:focus { border-color: #4ade80; background: rgba(74,222,128,0.05); }
+
+  /* Emoji picker grid */
+  .ep-emoji-row {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 4px;
+  }
+  .ep-emoji {
+    aspect-ratio: 1;
+    background: rgba(255,255,255,0.04);
+    border-radius: 5px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; cursor: pointer;
+    border: 1px solid transparent;
+  }
+  .ep-emoji.active { background: rgba(74,222,128,0.10); border-color: #4ade80; }
+
+  /* Color row */
+  .ep-color-row { display: flex; gap: 6px; }
+  .ep-color {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid transparent;
+  }
+  .ep-color.active { border-color: white; }
+  .c-fun { background: linear-gradient(135deg, #FFA94D, #FF6B9D); }
+  .c-work { background: linear-gradient(135deg, #2563eb, #06b6d4); }
+  .c-crypto { background: linear-gradient(135deg, #f59e0b, #ef4444); }
+  .c-news { background: linear-gradient(135deg, #10b981, #14b8a6); }
+
+  /* Mode segmented */
+  .ep-segs {
+    display: flex; gap: 0;
+    background: rgba(255,255,255,0.04);
+    border-radius: 6px;
+    padding: 2px;
+  }
+  .ep-seg {
+    flex: 1;
+    padding: 5px 0; text-align: center;
+    border-radius: 4px;
+    font-size: 11px; cursor: pointer;
+    color: rgba(255,255,255,0.6);
+  }
+  .ep-seg.active {
+    background: rgba(255,255,255,0.10);
+    color: white; font-weight: 600;
+  }
+
+  /* Proxy block */
+  .proxy-types {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+    margin-bottom: 8px;
+  }
+  .proxy-type {
+    padding: 5px 0; text-align: center;
+    background: rgba(255,255,255,0.04);
+    border: 0.5px solid rgba(255,255,255,0.08);
+    border-radius: 5px;
+    font-size: 11px; cursor: pointer;
+    color: rgba(255,255,255,0.7);
+    font-family: ui-monospace, monospace;
+  }
+  .proxy-type.active {
+    background: rgba(74,222,128,0.10);
+    color: #4ade80;
+    border-color: #4ade80;
+  }
+  .proxy-fields {
+    display: grid;
+    grid-template-columns: 1fr 60px;
+    gap: 6px;
+  }
+  .proxy-status {
+    margin-top: 8px;
+    font-family: ui-monospace, monospace; font-size: 10px;
+    color: #4ade80;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .proxy-status::before {
+    content: ""; width: 6px; height: 6px; border-radius: 50%;
+    background: #4ade80;
+  }
+
+  .ep-footer {
+    padding: 12px 20px;
+    background: #0e0e10;
+    display: flex; justify-content: space-between;
+  }
+  .btn-del {
+    padding: 6px 12px;
+    background: rgba(255,59,48,0.10);
+    color: #ff5f57;
+    border: 0.5px solid rgba(255,59,48,0.3);
+    border-radius: 5px;
+    font-size: 11px; cursor: pointer;
+    font-family: ui-monospace, monospace;
+  }
+  .btn-save {
+    padding: 6px 18px;
+    background: #4ade80;
+    color: #0e0e10;
+    border: none; border-radius: 5px;
+    font-size: 11px; font-weight: 700; cursor: pointer;
+    font-family: ui-monospace, monospace;
+  }
+
+  /* 说明 */
+  .compare { color: white; width: 220px; }
+  .compare h2 { font-size: 22px; font-weight: 700; margin-bottom: 14px; }
+  .compare ul { list-style: none; }
+  .compare li {
+    background: rgba(255,255,255,0.06);
+    border: 0.5px solid rgba(255,255,255,0.10);
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin-bottom: 6px;
+    font-size: 11px; line-height: 1.5;
+  }
+  .compare li strong {
+    display: block; font-size: 12px; margin-bottom: 2px;
+    color: #4ade80;
+    font-family: ui-monospace, monospace;
+  }
+</style>
+</head>
+<body>
+
+<!-- Launcher -->
+<div style="display:flex; flex-direction:column; gap:20px;">
+  <div class="win">
+    <div class="titlebar">
+      <div class="traffic">
+        <div class="traffic-light traffic-r"></div>
+        <div class="traffic-light traffic-y"></div>
+        <div class="traffic-light traffic-g"></div>
+      </div>
+      <div class="titlebar-cmd">
+        <span>🔍</span>&nbsp;&nbsp;搜索工作区或命令...
+        <span class="kbd">⌘ K</span>
+      </div>
+    </div>
+
+    <div class="header">
+      <div class="h-row">
+        <div class="h-title">
+          <span style="color:#4ade80;">●</span> WORKSPACES
+          <span class="h-count">3</span>
+        </div>
+        <div class="h-actions">
+          <button class="pill-btn">⚙ 全局设置</button>
+          <button class="pill-btn primary">＋ 新建工作区</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="list-head">
+      <div></div>
+      <div>名称 / 备注</div>
+      <div>模式</div>
+      <div>代理</div>
+      <div></div>
+    </div>
+
+    <div class="list">
+      <div class="pf">
+        <div class="pf-emoji">🐱</div>
+        <div class="pf-info">
+          <div class="pf-name">默认</div>
+          <div class="pf-note">本地直连 · 默认工作区</div>
+        </div>
+        <div class="pf-mode work">work</div>
+        <div class="pf-proxy direct">DIRECT</div>
+        <button class="pf-launch">▶ RUN</button>
+      </div>
+      <div class="pf">
+        <div class="pf-emoji">💻</div>
+        <div class="pf-info">
+          <div class="pf-name">工作</div>
+          <div class="pf-note">公司 V2Ray</div>
+        </div>
+        <div class="pf-mode work">work</div>
+        <div class="pf-proxy via">socks5 1087</div>
+        <button class="pf-launch">▶ RUN</button>
+      </div>
+      <div class="pf">
+        <div class="pf-emoji">🎮</div>
+        <div class="pf-info">
+          <div class="pf-name">娱乐</div>
+          <div class="pf-note">摸鱼 · 直连不卡顿</div>
+        </div>
+        <div class="pf-mode slack">slack</div>
+        <div class="pf-proxy direct">DIRECT</div>
+        <button class="pf-launch">▶ RUN</button>
+      </div>
+    </div>
+
+    <!-- Cookie 同步 strip -->
+    <div class="tip">
+      <div class="tip-icon">🍪</div>
+      <div class="tip-text">
+        <b>Google 不让登？</b> 一键从 Safari 同步 Cookie，永久解决。<br>
+        <span style="opacity:0.7; font-family: ui-monospace, monospace; font-size: 10px;">需要"完全磁盘访问"权限</span>
+      </div>
+      <button class="tip-btn">SYNC</button>
+    </div>
+
+    <div class="footer">
+      <div>📂 ~/.meowser/profiles.json</div>
+      <div>v1.6.0 · 本地存储 · 0 上传</div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit panel -->
+<div class="edit-panel">
+  <div class="ep-head">
+    <div class="ep-h">
+      <div class="ep-h-icon">⚙</div>
+      <span>EDIT WORKSPACE</span>
+    </div>
+    <div class="ep-sub">id: p_default · created 2 days ago</div>
+  </div>
+
+  <div class="ep-section">
+    <div class="ep-row">
+      <div class="ep-label">name</div>
+      <input class="ep-input" value="默认">
+    </div>
+    <div class="ep-row">
+      <div class="ep-label">note</div>
+      <input class="ep-input" value="本地直连 · 默认工作区">
+    </div>
+  </div>
+
+  <div class="ep-section">
+    <div class="ep-row">
+      <div class="ep-label">emoji</div>
+      <div class="ep-emoji-row">
+        <div class="ep-emoji active">🐱</div>
+        <div class="ep-emoji">💻</div>
+        <div class="ep-emoji">🎮</div>
+        <div class="ep-emoji">📺</div>
+        <div class="ep-emoji">📰</div>
+        <div class="ep-emoji">📈</div>
+        <div class="ep-emoji">💰</div>
+        <div class="ep-emoji">⚙</div>
+      </div>
+    </div>
+    <div class="ep-row">
+      <div class="ep-label">color</div>
+      <div class="ep-color-row">
+        <div class="ep-color c-fun active"></div>
+        <div class="ep-color c-work"></div>
+        <div class="ep-color c-crypto"></div>
+        <div class="ep-color c-news"></div>
+      </div>
+    </div>
+    <div class="ep-row">
+      <div class="ep-label">mode</div>
+      <div class="ep-segs">
+        <div class="ep-seg active">⚒️ work</div>
+        <div class="ep-seg">🌈 slack</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ep-section">
+    <div class="ep-row">
+      <div class="ep-label">proxy type</div>
+      <div class="proxy-types">
+        <div class="proxy-type active">DIRECT</div>
+        <div class="proxy-type">SYSTEM</div>
+        <div class="proxy-type">SOCKS5</div>
+        <div class="proxy-type">HTTP</div>
+      </div>
+      <div class="proxy-fields">
+        <input class="ep-input" placeholder="host" disabled>
+        <input class="ep-input" placeholder="port" disabled>
+      </div>
+      <div class="proxy-status">DIRECT · 走系统默认路由</div>
+    </div>
+  </div>
+
+  <div class="ep-footer">
+    <button class="btn-del">🗑 DELETE</button>
+    <button class="btn-save">SAVE ↵</button>
+  </div>
+</div>
+
+<!-- 说明 -->
+<div class="compare">
+  <h2>L · Linear/Raycast 风</h2>
+  <ul>
+    <li>
+      <strong>// 暗色 + 紧凑</strong>
+      Dev tool 即视感，单屏看完所有信息
+    </li>
+    <li>
+      <strong>// 命令栏 ⌘K</strong>
+      支持搜索 profile / 触发命令
+    </li>
+    <li>
+      <strong>// 表格化 Profile 列表</strong>
+      一行一 profile，列对齐，扫一眼看完
+    </li>
+    <li>
+      <strong>// 编辑面板独立侧栏</strong>
+      不挡列表，可以同时改和看
+    </li>
+    <li>
+      <strong>// Mono 字体强调</strong>
+      proxy / id / 状态都用等宽字体
+    </li>
+  </ul>
+</div>
+
+</body>
+</html>

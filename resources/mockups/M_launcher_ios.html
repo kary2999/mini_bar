@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Meowser · 启动器 · M iOS Settings 大卡片风</title>
+<style>
+  *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", sans-serif;
+    background: linear-gradient(135deg, #5b8aa8 0%, #8b6daa 50%, #c08988 100%);
+    color: #1d1d1f;
+    -webkit-font-smoothing: antialiased;
+    -webkit-user-select: none;
+    font-size: 13px;
+    min-height: 100vh;
+    padding: 60px 40px;
+    display: flex; gap: 40px;
+    align-items: flex-start; justify-content: center;
+  }
+
+  /* Launcher window */
+  .win {
+    width: 700px;
+    background: #f2f2f7;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.18), 0 0 0 0.5px rgba(0,0,0,0.10);
+  }
+  .titlebar {
+    height: 44px;
+    background: #f2f2f7;
+    display: flex; align-items: center; padding: 0 14px;
+    position: relative;
+    border-bottom: 0.5px solid rgba(60,60,67,0.10);
+  }
+  .traffic { display: flex; gap: 8px; }
+  .traffic-light { width: 12px; height: 12px; border-radius: 50%; }
+  .traffic-r { background: #ff5f57; }
+  .traffic-y { background: #febc2e; }
+  .traffic-g { background: #28c840; }
+
+  /* Hero */
+  .hero {
+    padding: 28px 24px 20px;
+    text-align: center;
+  }
+  .hero-icon {
+    width: 96px; height: 96px;
+    border-radius: 22px;
+    background: linear-gradient(135deg, #FFA94D 0%, #FF6B9D 100%);
+    margin: 0 auto 16px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 56px;
+    box-shadow: 0 12px 32px rgba(255,107,157,0.4);
+  }
+  .hero-title { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; }
+  .hero-sub { font-size: 13px; color: rgba(60,60,67,0.6); margin-top: 6px; }
+
+  /* Cookie sync card (Hero CTA) */
+  .cookie-card {
+    margin: 0 20px 16px;
+    background: linear-gradient(135deg, #4A90E2 0%, #B36DFF 100%);
+    color: white;
+    border-radius: 16px;
+    padding: 16px 18px;
+    display: flex; align-items: center; gap: 14px;
+    box-shadow: 0 8px 24px rgba(74,144,226,0.3);
+  }
+  .cc-icon {
+    width: 44px; height: 44px;
+    background: rgba(255,255,255,0.25);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px;
+    flex-shrink: 0;
+  }
+  .cc-text { flex: 1; }
+  .cc-h { font-size: 14px; font-weight: 700; }
+  .cc-s { font-size: 11px; opacity: 0.9; margin-top: 2px; }
+  .cc-btn {
+    padding: 8px 16px;
+    background: white;
+    color: #4A90E2;
+    border-radius: 999px;
+    font-size: 12px; font-weight: 700;
+    border: none; cursor: pointer;
+  }
+
+  /* Inset grouped list (iOS) */
+  .group-h {
+    padding: 24px 32px 8px;
+    font-size: 13px; color: rgba(60,60,67,0.6);
+  }
+  .group {
+    margin: 0 20px;
+    background: white;
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .group + .group { margin-top: 8px; }
+
+  .pf {
+    display: grid;
+    grid-template-columns: 56px 1fr auto;
+    align-items: center; gap: 14px;
+    padding: 14px 16px;
+    border-bottom: 0.5px solid rgba(60,60,67,0.10);
+    cursor: pointer;
+  }
+  .pf:last-child { border-bottom: 0; }
+  .pf:hover { background: rgba(120,120,128,0.08); }
+  .pf-avatar {
+    width: 48px; height: 48px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px; color: white;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  }
+  .av-fun { background: linear-gradient(135deg, #FFA94D, #FF6B9D); }
+  .av-work { background: linear-gradient(135deg, #2563eb, #06b6d4); }
+  .av-crypto { background: linear-gradient(135deg, #f59e0b, #ef4444); }
+  .av-news { background: linear-gradient(135deg, #10b981, #14b8a6); }
+
+  .pf-info { min-width: 0; }
+  .pf-line1 {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 4px;
+  }
+  .pf-name { font-size: 16px; font-weight: 600; }
+  .pf-mode {
+    font-size: 11px; font-weight: 600;
+    padding: 2px 9px; border-radius: 999px;
+  }
+  .pf-mode.work { background: rgba(0,113,227,0.10); color: #007AFF; }
+  .pf-mode.slack { background: rgba(255,45,85,0.10); color: #FF2D55; }
+  .pf-line2 {
+    font-size: 12px; color: rgba(60,60,67,0.6);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .pf-proxy {
+    font-size: 11px; color: rgba(60,60,67,0.45);
+    margin-top: 2px;
+    font-family: ui-monospace, "SF Mono", monospace;
+  }
+  .pf-proxy.via { color: #34C759; }
+
+  .pf-actions { display: flex; gap: 8px; }
+  .btn-icon {
+    width: 36px; height: 36px;
+    background: rgba(120,120,128,0.10);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 14px;
+    color: rgba(60,60,67,0.7);
+  }
+  .btn-icon:hover { background: rgba(120,120,128,0.16); }
+  .btn-launch {
+    display: flex; align-items: center; gap: 6px;
+    padding: 0 14px; height: 36px;
+    background: #007AFF;
+    color: white;
+    border-radius: 10px;
+    font-size: 13px; font-weight: 600;
+    border: none; cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0,113,227,0.3);
+  }
+  .btn-launch:hover { background: #0062c6; }
+
+  /* Add tile */
+  .add-tile {
+    margin: 8px 20px 0;
+    padding: 18px;
+    text-align: center;
+    background: white;
+    border-radius: 14px;
+    color: #007AFF;
+    font-weight: 600; font-size: 14px;
+    cursor: pointer;
+  }
+  .add-tile:hover { background: rgba(120,120,128,0.08); }
+
+  /* Footer */
+  .footer {
+    padding: 16px 20px 20px;
+    text-align: center;
+    font-size: 11px; color: rgba(60,60,67,0.45);
+  }
+
+  /* ─── Edit modal (iOS sheet style) ─── */
+  .edit-sheet {
+    width: 380px;
+    background: #f2f2f7;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.20), 0 0 0 0.5px rgba(0,0,0,0.10);
+  }
+  .es-head {
+    padding: 18px 20px 14px;
+    background: white;
+    border-bottom: 0.5px solid rgba(60,60,67,0.10);
+    text-align: center;
+    position: relative;
+  }
+  .es-h { font-size: 15px; font-weight: 600; }
+  .es-cancel {
+    position: absolute; left: 16px; top: 18px;
+    color: #007AFF; font-size: 14px; cursor: pointer;
+  }
+  .es-save {
+    position: absolute; right: 16px; top: 18px;
+    color: #007AFF; font-size: 14px; font-weight: 700; cursor: pointer;
+  }
+
+  .es-hero {
+    padding: 24px;
+    text-align: center;
+  }
+  .es-hero-avatar {
+    width: 72px; height: 72px;
+    border-radius: 18px;
+    background: linear-gradient(135deg, #FFA94D, #FF6B9D);
+    margin: 0 auto 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 40px; color: white;
+    box-shadow: 0 8px 20px rgba(255,107,157,0.3);
+  }
+  .es-hero-name {
+    font-size: 22px; font-weight: 700;
+    background: transparent; border: none;
+    text-align: center;
+    width: 100%; outline: none;
+  }
+
+  .es-section-h {
+    padding: 24px 32px 6px;
+    font-size: 12px; font-weight: 600;
+    color: rgba(60,60,67,0.6);
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .es-group {
+    margin: 0 16px;
+    background: white;
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .es-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 0.5px solid rgba(60,60,67,0.10);
+  }
+  .es-row:last-child { border-bottom: 0; }
+  .es-row-label {
+    color: rgba(60,60,67,0.85);
+    font-size: 14px;
+    flex: 1;
+  }
+  .es-row-input {
+    background: transparent; border: none;
+    text-align: right;
+    font-size: 14px; outline: none;
+    flex: 1;
+    color: rgba(60,60,67,0.65);
+  }
+  .es-row-input::placeholder { color: rgba(60,60,67,0.3); }
+  .es-row-value {
+    color: rgba(60,60,67,0.55);
+    font-size: 14px;
+  }
+
+  /* Emoji grid in edit */
+  .es-emoji {
+    padding: 16px;
+    background: white;
+    border-radius: 14px;
+    margin: 0 16px;
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 8px;
+  }
+  .es-emoji > div {
+    aspect-ratio: 1;
+    background: rgba(120,120,128,0.10);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; cursor: pointer;
+    border: 2px solid transparent;
+  }
+  .es-emoji > div.active { background: rgba(0,113,227,0.10); border-color: #007AFF; }
+
+  /* Color row */
+  .es-color {
+    padding: 16px;
+    background: white;
+    border-radius: 14px;
+    margin: 0 16px;
+    display: flex; gap: 16px; justify-content: center;
+  }
+  .es-color > div {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 3px solid transparent;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  }
+  .es-color > div.active { border-color: #007AFF; }
+  .c-fun { background: linear-gradient(135deg, #FFA94D, #FF6B9D); }
+  .c-work { background: linear-gradient(135deg, #2563eb, #06b6d4); }
+  .c-crypto { background: linear-gradient(135deg, #f59e0b, #ef4444); }
+  .c-news { background: linear-gradient(135deg, #10b981, #14b8a6); }
+
+  /* Mode segmented (iOS) */
+  .es-segs {
+    margin: 0 16px;
+    display: flex; gap: 2px;
+    background: rgba(120,120,128,0.16);
+    padding: 2px;
+    border-radius: 9px;
+  }
+  .es-seg {
+    flex: 1;
+    padding: 7px 0; text-align: center;
+    border-radius: 7px;
+    font-size: 13px; cursor: pointer;
+    color: rgba(60,60,67,0.7);
+  }
+  .es-seg.active {
+    background: white;
+    color: #1d1d1f; font-weight: 600;
+    box-shadow: 0 0.5px 1px rgba(0,0,0,0.08);
+  }
+
+  /* Proxy types */
+  .es-proxy-types {
+    margin: 0 16px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .es-pt {
+    padding: 14px;
+    background: white;
+    border-radius: 12px;
+    text-align: center;
+    cursor: pointer;
+    border: 2px solid transparent;
+  }
+  .es-pt.active {
+    border-color: #007AFF;
+    background: rgba(0,113,227,0.05);
+  }
+  .es-pt-emoji { font-size: 22px; margin-bottom: 4px; }
+  .es-pt-name { font-size: 13px; font-weight: 600; }
+  .es-pt-sub { font-size: 11px; color: rgba(60,60,67,0.5); margin-top: 2px; }
+
+  /* Delete */
+  .es-delete {
+    margin: 24px 16px 16px;
+    background: white;
+    border-radius: 14px;
+    padding: 14px;
+    text-align: center;
+    color: #FF3B30;
+    font-size: 14px; font-weight: 500;
+    cursor: pointer;
+  }
+
+  /* 说明 */
+  .compare { color: white; width: 220px; }
+  .compare h2 { font-size: 22px; font-weight: 700; margin-bottom: 14px; }
+  .compare ul { list-style: none; }
+  .compare li {
+    background: rgba(255,255,255,0.10);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    font-size: 11px; line-height: 1.5;
+  }
+  .compare li strong { display: block; font-size: 12px; margin-bottom: 3px; }
+  .check { color: #5DE0A8; font-weight: 700; margin-right: 4px; }
+</style>
+</head>
+<body>
+
+<!-- Launcher -->
+<div class="win">
+  <div class="titlebar">
+    <div class="traffic">
+      <div class="traffic-light traffic-r"></div>
+      <div class="traffic-light traffic-y"></div>
+      <div class="traffic-light traffic-g"></div>
+    </div>
+  </div>
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-icon">🐱</div>
+    <div class="hero-title">Meowser</div>
+    <div class="hero-sub">选个工作区开始 · 数据本地存储</div>
+  </div>
+
+  <!-- Cookie sync CTA -->
+  <div class="cookie-card">
+    <div class="cc-icon">🍪</div>
+    <div class="cc-text">
+      <div class="cc-h">Google 账号同步</div>
+      <div class="cc-s">从 Safari 拷贝 Cookie · 永久解决登录问题</div>
+    </div>
+    <button class="cc-btn">同步</button>
+  </div>
+
+  <!-- 工作区 -->
+  <div class="group-h">工作区 (3)</div>
+  <div class="group">
+    <div class="pf">
+      <div class="pf-avatar av-fun">🐱</div>
+      <div class="pf-info">
+        <div class="pf-line1">
+          <div class="pf-name">默认</div>
+          <div class="pf-mode work">⚒️ 工作</div>
+        </div>
+        <div class="pf-line2">本地直连 · 默认工作区</div>
+        <div class="pf-proxy">🌐 直连</div>
+      </div>
+      <div class="pf-actions">
+        <div class="btn-icon">⚙</div>
+        <button class="btn-launch">▶ 开启</button>
+      </div>
+    </div>
+    <div class="pf">
+      <div class="pf-avatar av-work">💻</div>
+      <div class="pf-info">
+        <div class="pf-line1">
+          <div class="pf-name">工作</div>
+          <div class="pf-mode work">⚒️ 工作</div>
+        </div>
+        <div class="pf-line2">公司 V2Ray</div>
+        <div class="pf-proxy via">🌐 socks5 127.0.0.1:1087</div>
+      </div>
+      <div class="pf-actions">
+        <div class="btn-icon">⚙</div>
+        <button class="btn-launch">▶ 开启</button>
+      </div>
+    </div>
+    <div class="pf">
+      <div class="pf-avatar av-fun">🎮</div>
+      <div class="pf-info">
+        <div class="pf-line1">
+          <div class="pf-name">娱乐</div>
+          <div class="pf-mode slack">🌈 摸鱼</div>
+        </div>
+        <div class="pf-line2">摸鱼 · 直连不卡顿</div>
+        <div class="pf-proxy">🌐 直连</div>
+      </div>
+      <div class="pf-actions">
+        <div class="btn-icon">⚙</div>
+        <button class="btn-launch">▶ 开启</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="add-tile">＋ 新建工作区</div>
+
+  <div class="footer">
+    📂 ~/.meowser/profiles.json &nbsp;·&nbsp; 🛡 本地存储 · 无云同步
+  </div>
+</div>
+
+<!-- Edit sheet -->
+<div class="edit-sheet">
+  <div class="es-head">
+    <div class="es-cancel">取消</div>
+    <div class="es-h">编辑工作区</div>
+    <div class="es-save">完成</div>
+  </div>
+
+  <div class="es-hero">
+    <div class="es-hero-avatar">🐱</div>
+    <input class="es-hero-name" value="默认">
+  </div>
+
+  <div class="es-section-h">外观</div>
+  <div class="es-emoji">
+    <div class="active">🐱</div>
+    <div>💻</div>
+    <div>🎮</div>
+    <div>📺</div>
+    <div>📰</div>
+    <div>📈</div>
+    <div>💰</div>
+    <div>⚙</div>
+  </div>
+  <div style="margin-top:8px;"></div>
+  <div class="es-color">
+    <div class="c-fun active"></div>
+    <div class="c-work"></div>
+    <div class="c-crypto"></div>
+    <div class="c-news"></div>
+  </div>
+
+  <div class="es-section-h">基本</div>
+  <div class="es-group">
+    <div class="es-row">
+      <div class="es-row-label">备注</div>
+      <input class="es-row-input" value="本地直连 · 默认工作区">
+    </div>
+  </div>
+
+  <div class="es-section-h">模式</div>
+  <div class="es-segs">
+    <div class="es-seg active">⚒️ 工作模式</div>
+    <div class="es-seg">🌈 摸鱼模式</div>
+  </div>
+
+  <div class="es-section-h">代理</div>
+  <div class="es-proxy-types">
+    <div class="es-pt active">
+      <div class="es-pt-emoji">🌐</div>
+      <div class="es-pt-name">直连</div>
+      <div class="es-pt-sub">本地网络</div>
+    </div>
+    <div class="es-pt">
+      <div class="es-pt-emoji">⚙</div>
+      <div class="es-pt-name">系统代理</div>
+      <div class="es-pt-sub">跟随 macOS</div>
+    </div>
+    <div class="es-pt">
+      <div class="es-pt-emoji">🔒</div>
+      <div class="es-pt-name">SOCKS5</div>
+      <div class="es-pt-sub">绕开 VPN</div>
+    </div>
+    <div class="es-pt">
+      <div class="es-pt-emoji">🔗</div>
+      <div class="es-pt-name">HTTP</div>
+      <div class="es-pt-sub">绕开 VPN</div>
+    </div>
+  </div>
+
+  <div class="es-delete">🗑 删除工作区</div>
+</div>
+
+<!-- 说明 -->
+<div class="compare">
+  <h2>M · iOS Settings 风</h2>
+  <ul>
+    <li>
+      <strong><span class="check">✓</span> Hero 头像大气</strong>
+      96px 图标 + Cookie 同步彩条 CTA
+    </li>
+    <li>
+      <strong><span class="check">✓</span> 卡片间距大</strong>
+      iOS Settings 标志性留白
+    </li>
+    <li>
+      <strong><span class="check">✓</span> 编辑用 Sheet 模态</strong>
+      取消 / 完成 顶部固定，单页填完所有
+    </li>
+    <li>
+      <strong><span class="check">✓</span> 代理用大卡片选</strong>
+      4 张卡片可视化，告诉你每个的作用
+    </li>
+    <li>
+      <strong><span class="check">✓</span> Cookie 同步明显</strong>
+      渐变蓝紫 banner，吸睛但不抢戏
+    </li>
+  </ul>
+</div>
+
+</body>
+</html>

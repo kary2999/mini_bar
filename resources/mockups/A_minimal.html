@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Minbar · Mockup A — macOS Sonoma</title>
+<style>
+  /* ───── Apple Design Tokens ───── */
+  :root {
+    --bg:       #f5f5f7;
+    --bg-2:     #ffffff;
+    --bg-elev:  #ffffff;
+    --label:    #1d1d1f;
+    --label-2:  #424245;
+    --label-3:  #6e6e73;
+    --label-4:  #86868b;
+    --sep:      rgba(0,0,0,0.06);
+    --hairline: rgba(0,0,0,0.08);
+    --fill-1:   rgba(0,0,0,0.04);
+    --fill-2:   rgba(0,0,0,0.08);
+    --blue:     #0071e3;
+    --blue-bg:  rgba(0,113,227,0.10);
+    --shadow-sm: 0 0.5px 1px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 0.5px 1px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.06);
+    --shadow-lg: 0 0.5px 1px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.08);
+    --r-sm: 8px;
+    --r-md: 12px;
+    --r-lg: 16px;
+    --r-xl: 22px;
+    --ease: cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1d1d1f;
+      --bg-2: #2c2c2e;
+      --bg-elev: #2c2c2e;
+      --label: #f5f5f7;
+      --label-2: #d1d1d6;
+      --label-3: #8e8e93;
+      --label-4: #636366;
+      --sep: rgba(255,255,255,0.08);
+      --hairline: rgba(255,255,255,0.10);
+      --fill-1: rgba(255,255,255,0.06);
+      --fill-2: rgba(255,255,255,0.12);
+      --blue: #0a84ff;
+      --blue-bg: rgba(10,132,255,0.18);
+      --shadow-sm: 0 0.5px 1px rgba(0,0,0,0.6), 0 1px 2px rgba(0,0,0,0.4);
+      --shadow-md: 0 0.5px 1px rgba(0,0,0,0.6), 0 4px 12px rgba(0,0,0,0.4);
+    }
+  }
+
+  *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "PingFang SC", "Helvetica Neue", sans-serif;
+    background: var(--bg);
+    color: var(--label);
+    -webkit-font-smoothing: antialiased;
+    -webkit-user-select: none;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  /* ──── Sidebar (System Settings.app style) ──── */
+  .layout {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    min-height: 100vh;
+  }
+  .sidebar {
+    background: var(--bg-2);
+    border-right: 1px solid var(--sep);
+    padding: 24px 12px;
+    backdrop-filter: blur(40px) saturate(180%);
+    -webkit-backdrop-filter: blur(40px) saturate(180%);
+  }
+  .brand {
+    display: flex; align-items: center; gap: 10px;
+    padding: 4px 12px 20px;
+    font-size: 17px; font-weight: 700;
+    letter-spacing: -0.3px;
+  }
+  .brand-mark {
+    width: 28px; height: 28px;
+    background: linear-gradient(135deg, #007AFF 0%, #5AC8FA 100%);
+    border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    box-shadow: 0 2px 4px rgba(0,113,227,0.3);
+  }
+  .nav-section { padding: 12px 12px 4px; font-size: 11px; font-weight: 600; color: var(--label-3); text-transform: uppercase; letter-spacing: 0.6px; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 6px 10px; margin: 1px 0;
+    border-radius: 6px; cursor: pointer;
+    font-size: 13px; color: var(--label-2);
+    transition: background 0.12s var(--ease);
+  }
+  .nav-item:hover { background: var(--fill-1); }
+  .nav-item.active { background: var(--blue); color: white; }
+  .nav-item .nav-ico {
+    width: 20px; height: 20px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 5px;
+    font-size: 12px; flex-shrink: 0;
+  }
+  .nav-item.active .nav-ico { background: rgba(255,255,255,0.25); }
+  .nav-item:not(.active) .nav-ico { background: var(--fill-2); }
+
+  /* ──── Main Content ──── */
+  .main { padding: 32px 48px 48px; max-width: 1100px; }
+  .page { display: none; }
+  .page.active { display: block; animation: fadeIn 0.25s var(--ease-spring); }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+  .page-title { font-size: 28px; font-weight: 700; letter-spacing: -0.6px; line-height: 1.15; margin-bottom: 4px; }
+  .page-sub { font-size: 13px; color: var(--label-3); margin-bottom: 24px; }
+
+  /* ──── Hero (Time + Weather widgets) ──── */
+  .widgets {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .widget {
+    background: var(--bg-elev);
+    border-radius: var(--r-xl);
+    padding: 24px;
+    box-shadow: var(--shadow-md);
+    border: 0.5px solid var(--hairline);
+    position: relative;
+    overflow: hidden;
+  }
+  .widget-time { display: flex; flex-direction: column; gap: 6px; }
+  .greeting { font-size: 13px; font-weight: 500; color: var(--label-3); }
+  .clock {
+    font-size: 64px; font-weight: 200;
+    letter-spacing: -3px; line-height: 1;
+    font-feature-settings: "tnum"; font-variant-numeric: tabular-nums;
+  }
+  .clock .seconds { font-size: 24px; color: var(--label-3); font-weight: 300; }
+  .date { font-size: 14px; color: var(--label-2); margin-top: 4px; }
+
+  .widget-weather {
+    background: linear-gradient(135deg, #FEC163 0%, #DE4313 100%);
+    color: white;
+    display: flex; flex-direction: column; justify-content: space-between;
+  }
+  .widget-weather::before {
+    content: ""; position: absolute; top: -40px; right: -40px;
+    width: 160px; height: 160px;
+    background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 60%);
+  }
+  .w-loc { font-size: 12px; font-weight: 500; opacity: 0.9; }
+  .w-temp { font-size: 56px; font-weight: 300; line-height: 1; letter-spacing: -2px; }
+  .w-temp sup { font-size: 22px; vertical-align: top; margin-left: 2px; }
+  .w-cond { font-size: 13px; font-weight: 500; opacity: 0.9; }
+  .w-icon { font-size: 44px; align-self: flex-end; }
+
+  /* ──── Search ──── */
+  .search-bar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 11px 16px;
+    background: var(--bg-elev);
+    border: 0.5px solid var(--hairline);
+    border-radius: 12px;
+    margin-bottom: 24px;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.15s var(--ease);
+  }
+  .search-bar:focus-within { border-color: var(--blue); box-shadow: 0 0 0 4px var(--blue-bg); }
+  .search-icon { color: var(--label-3); font-size: 14px; }
+  .search-input {
+    flex: 1; border: none; outline: none;
+    background: transparent; color: inherit;
+    font-size: 14px;
+    font-family: inherit;
+  }
+  .search-input::placeholder { color: var(--label-3); }
+  .search-kbd {
+    font-size: 11px; color: var(--label-3);
+    padding: 2px 6px; border: 0.5px solid var(--hairline);
+    border-radius: 4px; background: var(--fill-1);
+    font-family: ui-monospace, "SF Mono", monospace;
+  }
+
+  /* ──── Categories ──── */
+  .section-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    padding: 0 4px 12px;
+    margin-top: 8px;
+  }
+  .section-title {
+    font-size: 17px; font-weight: 600; letter-spacing: -0.2px;
+  }
+  .section-meta { font-size: 12px; color: var(--label-3); }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(108px, 1fr));
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+  .card {
+    background: var(--bg-elev);
+    border-radius: var(--r-md);
+    padding: 14px 8px;
+    border: 0.5px solid var(--hairline);
+    box-shadow: var(--shadow-sm);
+    cursor: pointer;
+    transition: all 0.18s var(--ease-spring);
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+  }
+  .card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: rgba(0,0,0,0.12);
+  }
+  .card-logo {
+    width: 36px; height: 36px;
+    border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--fill-1);
+    overflow: hidden;
+  }
+  .card-logo img {
+    width: 22px; height: 22px;
+    object-fit: contain;
+  }
+  .card-name {
+    font-size: 12px; font-weight: 500;
+    text-align: center;
+    color: var(--label);
+  }
+
+  /* ──── History (rows) ──── */
+  .list-card {
+    background: var(--bg-elev);
+    border-radius: var(--r-lg);
+    border: 0.5px solid var(--hairline);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+  }
+  .list-row {
+    display: grid;
+    grid-template-columns: 36px 1fr auto;
+    align-items: center; gap: 14px;
+    padding: 12px 18px;
+    cursor: pointer;
+    transition: background 0.12s var(--ease);
+    border-bottom: 0.5px solid var(--sep);
+  }
+  .list-row:last-child { border-bottom: 0; }
+  .list-row:hover { background: var(--fill-1); }
+  .list-logo {
+    width: 28px; height: 28px;
+    border-radius: 6px; background: var(--fill-1);
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+  }
+  .list-logo img { width: 18px; height: 18px; }
+  .list-info-title { font-size: 14px; font-weight: 500; color: var(--label); }
+  .list-info-url { font-size: 12px; color: var(--label-3); margin-top: 2px; font-family: ui-monospace, monospace; }
+  .list-time { font-size: 12px; color: var(--label-3); }
+  .list-day-head { padding: 16px 18px 8px; font-size: 12px; font-weight: 600; color: var(--label-3); text-transform: uppercase; letter-spacing: 0.4px; }
+
+  /* ──── About ──── */
+  .about-section {
+    background: var(--bg-elev);
+    border: 0.5px solid var(--hairline);
+    border-radius: var(--r-lg);
+    padding: 20px 22px;
+    margin-bottom: 14px;
+    box-shadow: var(--shadow-sm);
+  }
+  .about-h { font-size: 15px; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+  .about-text { font-size: 13px; color: var(--label-2); line-height: 1.65; }
+  .about-text p { margin-bottom: 6px; }
+  .kbd {
+    display: inline-block; padding: 2px 7px;
+    border: 0.5px solid var(--hairline);
+    border-radius: 5px;
+    background: var(--fill-1);
+    font-family: ui-monospace, "SF Mono", monospace;
+    font-size: 11px; margin: 0 1px;
+    box-shadow: 0 1px 0 rgba(0,0,0,0.05);
+  }
+  .badge {
+    display: inline-block; padding: 2px 8px;
+    background: var(--blue-bg); color: var(--blue);
+    border-radius: 999px;
+    font-size: 11px; font-weight: 600;
+    margin-left: 6px;
+  }
+</style>
+</head>
+<body>
+
+<div class="layout">
+  <!-- ───────── Sidebar ───────── -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">🐟</div>
+      <span>Minbar</span>
+    </div>
+
+    <div class="nav-section">导航</div>
+    <div class="nav-item active" onclick="go(this,'home')">
+      <span class="nav-ico">🏠</span><span>首页</span>
+    </div>
+    <div class="nav-item" onclick="go(this,'history')">
+      <span class="nav-ico">⏱</span><span>历史</span>
+    </div>
+    <div class="nav-item" onclick="go(this,'about')">
+      <span class="nav-ico">ⓘ</span><span>关于</span>
+    </div>
+
+    <div class="nav-section">分类</div>
+    <div class="nav-item"><span class="nav-ico">📺</span><span>娱乐</span></div>
+    <div class="nav-item"><span class="nav-ico">💻</span><span>技术</span></div>
+    <div class="nav-item"><span class="nav-ico">💰</span><span>炒币</span></div>
+    <div class="nav-item"><span class="nav-ico">📰</span><span>新闻</span></div>
+    <div class="nav-item"><span class="nav-ico">📈</span><span>财经</span></div>
+  </aside>
+
+  <!-- ───────── Main ───────── -->
+  <main class="main">
+
+    <!-- 首页 -->
+    <div class="page active" id="home">
+      <div class="page-title">下午好</div>
+      <div class="page-sub">准备摸点鱼了？今天的版本是 v1.3.0</div>
+
+      <div class="widgets">
+        <div class="widget widget-time">
+          <div class="greeting">CURRENT TIME</div>
+          <div class="clock"><span id="hm">14:32</span><span class="seconds" id="ss">:08</span></div>
+          <div class="date">2026年4月27日 · 星期一 · 农历三月十一</div>
+        </div>
+        <div class="widget widget-weather">
+          <div>
+            <div class="w-loc">📍 深圳</div>
+            <div class="w-cond">晴 · 微风 · 湿度 62%</div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:flex-end;">
+            <div class="w-temp">22<sup>°</sup></div>
+            <div class="w-icon">☀️</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="search-bar">
+        <span class="search-icon">🔍</span>
+        <input class="search-input" placeholder="搜索网址或关键词，回车直达">
+        <span class="search-kbd">⌘L</span>
+      </div>
+
+      <div class="section-head">
+        <div class="section-title">娱乐区</div>
+        <div class="section-meta">10 个站点</div>
+      </div>
+      <div class="grid">
+        <div class="card"><div class="card-logo"><img src="https://cdn.simpleicons.org/bilibili/00A1D6"></div><div class="card-name">哔哩哔哩</div></div>
+        <div class="card"><div class="card-logo"><img src="https://cdn.simpleicons.org/youtube/FF0000"></div><div class="card-name">YouTube</div></div>
+        <div class="card"><div class="card-logo"><img src="https://cdn.simpleicons.org/tiktok/000000"></div><div class="card-name">抖音</div></div>
+        <div class="card"><div class="card-logo"><img src="https://icons.duckduckgo.com/ip3/xiaohongshu.com.ico"></div><div class="card-name">小红书</div></div>
+        <div class="card"><div class="card-logo"><img src="https://cdn.simpleicons.org/sinaweibo/E6162D"></div><div class="card-name">微博</div></div>
+        <div class="card"><div class="card-logo"><img src="https://cdn.simpleicons.org/x/000000"></div><div class="card-name">X</div></div>
+        <div class="card"><div class="card-logo"><img src="https://cdn.simpleicons.org/instagram/E4405F"></div><div class="card-name">Instagram</div></div>
+        <div class="card"><div class="card-logo"><img src="https://cdn.simpleicons.org/tiktok/25F4EE"></div><div class="card-name">TikTok</div></div>
+        <div class="card"><div class="card-logo"><img src="https://cdn.simpleicons.org/netflix/E50914"></div><div class="card-name">Netflix</div></div>
+        <div class="card"><div class="card-logo"><img src="https://cdn.simpleicons.org/reddit/FF4500"></div><div class="card-name">Reddit</div></div>
+      </div>
+
+      <div class="section-head">
+        <div class="section-title">互联网技术</div>
+        <div class="section-meta">10 个站点</div>
+      </div>
+      <div class="grid">
+        <div class="card"><div class="card-logo"><img src="https://cdn.simpleicons.org/github/181717"></div><div class="card-name">GitHub</div></div>
+        <div class="card"><div class="card-logo"><img src="https://cdn.simpleicons.org/stackoverflow/F58025"></div><div class="card-name">StackOverflow</div></div>
+        <div class="card"><div class="card-logo"><img src="https://icons.duckduckgo.com/ip3/juejin.cn.ico"></div><div class="card-name">掘金</div></div>
+        <div class="card"><div class="card-logo"><img src="https://icons.duckduckgo.com/ip3/v2ex.com.ico"></div><div class="card-name">V2EX</div></div>
+        <div class="card"><div class="card-logo"><img src="https://cdn.simpleicons.org/ycombinator/FF6600"></div><div class="card-name">HackerNews</div></div>
+        <div class="card"><div class="card-logo"><img src="https://icons.duckduckgo.com/ip3/36kr.com.ico"></div><div class="card-name">36Kr</div></div>
+        <div class="card"><div class="card-logo"><img src="https://cdn.simpleicons.org/zhihu/0084FF"></div><div class="card-name">知乎</div></div>
+        <div class="card"><div class="card-logo"><img src="https://cdn.simpleicons.org/leetcode/FFA116"></div><div class="card-name">LeetCode</div></div>
+        <div class="card"><div class="card-logo"><img src="https://cdn.simpleicons.org/mdnwebdocs/000000"></div><div class="card-name">MDN</div></div>
+        <div class="card"><div class="card-logo"><img src="https://cdn.simpleicons.org/openai/412991"></div><div class="card-name">ChatGPT</div></div>
+      </div>
+
+      <div class="section-head">
+        <div class="section-title">炒币</div>
+        <div class="section-meta">8 个站点</div>
+      </div>
+      <div class="grid">
+        <div class="card"><div class="card-logo"><img src="https://cdn.simpleicons.org/binance/F0B90B"></div><div class="card-name">币安</div></div>
+        <div class="card"><div class="card-logo"><img src="https://icons.duckduckgo.com/ip3/okx.com.ico"></div><div class="card-name">OKX</div></div>
+        <div class="card"><div class="card-logo"><img src="https://cdn.simpleicons.org/coinmarketcap/17181B"></div><div class="card-name">CoinMarketCap</div></div>
+        <div class="card"><div class="card-logo"><img src="https://cdn.simpleicons.org/tradingview/2962FF"></div><div class="card-name">TradingView</div></div>
+        <div class="card"><div class="card-logo"><img src="https://cdn.simpleicons.org/coingecko/8DC647"></div><div class="card-name">CoinGecko</div></div>
+        <div class="card"><div class="card-logo"><img src="https://icons.duckduckgo.com/ip3/jinse.com.ico"></div><div class="card-name">金色财经</div></div>
+      </div>
+
+    </div>
+
+    <!-- 历史 -->
+    <div class="page" id="history">
+      <div class="page-title">浏览历史</div>
+      <div class="page-sub">最近 7 天 · 过期自动清理 · 数据存于本地</div>
+
+      <div class="list-day-head">今天</div>
+      <div class="list-card">
+        <div class="list-row">
+          <div class="list-logo"><img src="https://cdn.simpleicons.org/github/181717"></div>
+          <div><div class="list-info-title">GitHub - Where developers build software</div><div class="list-info-url">github.com</div></div>
+          <div class="list-time">2 分钟前</div>
+        </div>
+        <div class="list-row">
+          <div class="list-logo"><img src="https://cdn.simpleicons.org/bilibili/00A1D6"></div>
+          <div><div class="list-info-title">哔哩哔哩 - 干杯～ Bilibili</div><div class="list-info-url">m.bilibili.com</div></div>
+          <div class="list-time">15 分钟前</div>
+        </div>
+        <div class="list-row">
+          <div class="list-logo"><img src="https://cdn.simpleicons.org/openai/412991"></div>
+          <div><div class="list-info-title">ChatGPT</div><div class="list-info-url">chat.openai.com</div></div>
+          <div class="list-time">1 小时前</div>
+        </div>
+      </div>
+
+      <div class="list-day-head">昨天</div>
+      <div class="list-card">
+        <div class="list-row">
+          <div class="list-logo"><img src="https://icons.duckduckgo.com/ip3/xiaohongshu.com.ico"></div>
+          <div><div class="list-info-title">小红书 - 你的生活兴趣社区</div><div class="list-info-url">xiaohongshu.com</div></div>
+          <div class="list-time">昨天 18:24</div>
+        </div>
+        <div class="list-row">
+          <div class="list-logo"><img src="https://cdn.simpleicons.org/coinmarketcap/17181B"></div>
+          <div><div class="list-info-title">CoinMarketCap - Cryptocurrency Prices</div><div class="list-info-url">coinmarketcap.com</div></div>
+          <div class="list-time">昨天 14:01</div>
+        </div>
+      </div>
+
+      <div class="list-day-head">2 天前</div>
+      <div class="list-card">
+        <div class="list-row">
+          <div class="list-logo"><img src="https://icons.duckduckgo.com/ip3/36kr.com.ico"></div>
+          <div><div class="list-info-title">36Kr - 让一部分人先看到未来</div><div class="list-info-url">36kr.com</div></div>
+          <div class="list-time">2 天前</div>
+        </div>
+        <div class="list-row">
+          <div class="list-logo"><img src="https://cdn.simpleicons.org/x/000000"></div>
+          <div><div class="list-info-title">X / Twitter</div><div class="list-info-url">x.com/home</div></div>
+          <div class="list-time">2 天前</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 关于 -->
+    <div class="page" id="about">
+      <div class="page-title">🐟 Minbar</div>
+      <div class="page-sub">摸鱼浏览器 <span class="badge">v1.3.0</span> · 2026.04 · macOS 11+ Apple Silicon</div>
+
+      <div class="about-section">
+        <div class="about-h">🎯 开发目的</div>
+        <div class="about-text">
+          <p>工作间隙偷得浮生半日闲。Minbar 是一个常驻菜单栏的小浮窗浏览器，按一下快捷键就能召唤，等比缩小到屏幕角落不影响主屏作业。点击其他窗口自动缩回，随时回归"忙碌中"。</p>
+          <p>所有数据本地存储，不上传任何服务器，无追踪、无登录。</p>
+        </div>
+      </div>
+
+      <div class="about-section">
+        <div class="about-h">⌨️ 快捷键</div>
+        <div class="about-text">
+          <p><span class="kbd">⌥</span><span class="kbd">~</span> &nbsp;显示 / 隐藏窗口</p>
+          <p><span class="kbd">⌘</span><span class="kbd">⌥</span><span class="kbd">Q</span> &nbsp;退出 App</p>
+          <p><span class="kbd">⌘</span><span class="kbd">L</span> &nbsp;聚焦地址栏（首页内）</p>
+          <p>双击窗口 切换大小</p>
+        </div>
+      </div>
+
+      <div class="about-section">
+        <div class="about-h">📂 数据存储（独立目录）</div>
+        <div class="about-text">
+          <p><span class="kbd">~/.minbar/config.json</span> 用户配置（快捷键、窗口尺寸）</p>
+          <p><span class="kbd">~/.minbar-data/history.json</span> 浏览历史，7 天自动清理</p>
+          <p><span class="kbd">~/.minbar-data/webdata/</span> 独立 Cookie / Cache（与 Safari 完全隔离）</p>
+        </div>
+      </div>
+
+      <div class="about-section">
+        <div class="about-h">🛡️ 隐私 & 网络</div>
+        <div class="about-text">
+          <p>WebKit 独立 DataStore，与系统 Safari 完全隔离</p>
+          <p>支持「无痕模式」开关，关闭 App 即清除所有 Cookie / 缓存</p>
+          <p>VPN 绕行：需在 VPN 客户端配置 split-tunneling，将 <span class="kbd">com.minbar.app</span> 列入直连</p>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+function go(el, id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (el) el.classList.add('active');
+}
+function tickClock() {
+  const now = new Date();
+  document.getElementById('hm').textContent = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  document.getElementById('ss').textContent = `:${String(now.getSeconds()).padStart(2,'0')}`;
+}
+tickClock(); setInterval(tickClock, 1000);
+</script>
+</body>
+</html>
