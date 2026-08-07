@@ -240,6 +240,48 @@ xattr -cr /Applications/Meowser.app
 - 尝试重置配置：`rm ~/.meowser/config.json`
 - 在 [GitHub Issues](https://github.com/kary2999/mini_bar/issues) 中报告问题，附上错误信息
 
+## CI/CD 自动化
+
+项目包含两套 GitHub Actions 工作流：
+
+### 🟢 简单版 (build-simple.yml)
+- 触发条件：主分支 push 和 PR
+- 功能：
+  - 单个 Python 版本测试（3.12）
+  - 运行单元测试
+  - 打包 macOS 应用
+  - 生成构建产物
+- 用途：快速反馈，检查基本功能
+
+### 🔵 完整版 (build-full.yml)
+- 触发条件：标签 `v*` push（发布版本）
+- 功能：
+  - 多 Python 版本测试（3.9, 3.11, 3.12）
+  - 代码质量检查
+  - 完整打包和签名
+  - 自动生成 Release 页面
+  - 自动上传可分发文件
+  - 生成详细的更新日志
+- 用途：完整的发布流程，确保质量
+
+### 使用方法
+
+```bash
+# 发起简单构建（自动触发）
+git push origin main
+
+# 发起完整发布流程
+git tag -a v2.2.0 -m "Release v2.2.0: 新功能说明"
+git push origin v2.2.0
+```
+
+完整发布流程会自动：
+1. ✅ 在多个 Python 版本上运行测试
+2. 📦 编译 macOS 应用
+3. 🔐 签名和打包
+4. 🚀 创建 GitHub Release 页面
+5. 📥 附加可下载的 zip 文件
+
 ## 开发
 
 详细的开发指南请查看 [CLAUDE.md](CLAUDE.md)。
