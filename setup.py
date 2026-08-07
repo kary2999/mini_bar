@@ -25,8 +25,8 @@ OPTIONS = {
         "CFBundleName": "Meowser",
         "CFBundleDisplayName": "Meowser",
         "CFBundleIdentifier": "com.meowser.app",
-        "CFBundleVersion": "2.1.0",
-        "CFBundleShortVersionString": "2.1.0",
+        "CFBundleVersion": "2.2.0",
+        "CFBundleShortVersionString": "2.2.0",
         "LSUIElement": True,  # 菜单栏 App，不占 Dock
         "NSHighResolutionCapable": True,
         "LSMinimumSystemVersion": "11.0",
