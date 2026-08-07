@@ -1,5 +1,7 @@
 # Meowser — macOS 浮动浏览器
 
+![Meowser Logo](resources/menubar_kitten@1x.png)
+
 一个轻量级的 macOS 菜单栏应用，让你可以在工作时随时查看网页内容。完美适合查看文档、参考资料、视频或即时通讯。
 
 ## 功能特性
