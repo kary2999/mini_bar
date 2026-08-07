@@ -163,22 +163,58 @@ cd dist
 COPYFILE_DISABLE=1 zip -qry --symlinks "${APP_NAME}-v${VERSION}.zip" "${APP_NAME}-v${VERSION}" -x "*.DS_Store" -x "*/._*"
 cd ..
 
-# 清理中间目录（保留 app 和 zip）
-rm -rf "$RELEASE_DIR"
+ZIP_SIZE=$(du -h "$ZIP_PATH" | cut -f1)
 
-SIZE=$(du -h "$ZIP_PATH" | cut -f1)
+# ── 步骤 6: 生成 DMG 安装包 ────────────────────────
+echo ""
+echo "▶ [6/6] 生成 DMG 安装包..."
+
+DMG_PATH="dist/${APP_NAME}-v${VERSION}.dmg"
+DMG_TEMP="dist/.dmg_temp"
+rm -f "$DMG_PATH"
+rm -rf "$DMG_TEMP"
+mkdir -p "$DMG_TEMP"
+
+# 复制应用到临时目录
+cp -R "dist/${APP_NAME}.app" "$DMG_TEMP/"
+
+# 创建 DMG
+hdiutil create \
+  -volname "${APP_NAME}" \
+  -srcfolder "$DMG_TEMP" \
+  -ov \
+  -format UDZO \
+  -imagekey zlib-level=9 \
+  "$DMG_PATH" \
+  2>&1 | tail -3
+
+# 签名 DMG
+codesign --force --sign - "$DMG_PATH" 2>/dev/null || true
+
+# 清理临时文件
+rm -rf "$DMG_TEMP"
+
+DMG_SIZE=$(du -h "$DMG_PATH" | cut -f1)
+
+# 清理中间目录（保留 app、zip 和 dmg）
+rm -rf "$RELEASE_DIR"
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "  ✅ 打包完成"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
-echo "  📦 分发 zip: $ZIP_PATH  (${SIZE})"
+echo "  📦 分发产物："
+echo "     DMG:  $DMG_PATH  (${DMG_SIZE})  ← 推荐用于分发"
+echo "     ZIP:  $ZIP_PATH  (${ZIP_SIZE})  ← 备选方案"
+echo ""
 echo "  📱 开发测试: dist/${APP_NAME}.app"
 echo ""
-echo "  【分发给朋友】"
-echo "    1. 发送 $ZIP_PATH"
-echo "    2. 对方解压 → 双击【打开.command】→ 完成"
+echo "  【如何分发】"
+echo "    方式 A（推荐）：发送 DMG 文件"
+echo "      对方：双击 DMG → 拖 Meowser.app 到 Applications"
+echo "    方式 B：发送 ZIP 文件"
+echo "      对方：解压 → 双击【打开.command】"
 echo ""
 echo "  【系统要求】"
 echo "    • macOS 11+ / Apple Silicon (M 系列)"

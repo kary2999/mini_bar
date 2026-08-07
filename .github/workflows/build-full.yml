@@ -101,18 +101,26 @@ jobs:
 
       - name: Verify build
         run: |
-          if [ -f "dist/Meowser-*.zip" ]; then
-            echo "✅ Build successful"
-            ls -lh dist/
+          if [ -f "dist/Meowser-*.dmg" ] && [ -f "dist/Meowser-*.zip" ]; then
+            echo "✅ Build successful (DMG + ZIP)"
+            ls -lh dist/Meowser-*
           else
             echo "❌ Build failed"
             exit 1
           fi
 
-      - name: Upload build artifacts
+      - name: Upload DMG artifact
         uses: actions/upload-artifact@v3
         with:
-          name: meowser-macos-${{ matrix.arch }}
+          name: meowser-dmg-${{ matrix.arch }}
+          path: dist/Meowser-*.dmg
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Upload ZIP artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: meowser-zip-${{ matrix.arch }}
           path: dist/Meowser-*.zip
           retention-days: 30
           if-no-files-found: error
@@ -143,7 +151,9 @@ jobs:
       - name: Prepare release assets
         run: |
           mkdir -p release
+          find artifacts -name "Meowser-*.dmg" -exec cp {} release/ \;
           find artifacts -name "Meowser-*.zip" -exec cp {} release/ \;
+          echo "📦 Release assets:"
           ls -lh release/
 
       - name: Generate changelog
@@ -159,7 +169,9 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          files: release/Meowser-*.zip
+          files: |
+            release/Meowser-*.dmg
+            release/Meowser-*.zip
           body: |
             ## 发布说明 (Release Notes)
 
@@ -168,10 +180,22 @@ jobs:
             - 提交: ${{ github.sha }}
             - 运行器: macOS latest (Apple Silicon)
 
-            ### 安装 (Installation)
+            ### 安装方法 (Installation)
+
+            **方式 A（推荐）：DMG 安装包**
+            1. 下载 `Meowser-vX.Y.Z.dmg`
+            2. 双击打开 DMG 文件
+            3. 将 `Meowser.app` 拖到 Applications 文件夹
+            4. 从 Applications 打开 Meowser
+
+            **方式 B：ZIP 压缩包**
             1. 下载 `Meowser-vX.Y.Z.zip`
             2. 解压后双击 `打开.command`
             3. 按照提示选择工作区
+
+            ### 系统要求 (Requirements)
+            - macOS 11 (Big Sur) 或更新版本
+            - Apple Silicon (M1/M2/M3/M4/M5)
 
             ### 更新日志 (Changelog)
             ${{ steps.changelog.outputs.changelog || 'See commits for details' }}
