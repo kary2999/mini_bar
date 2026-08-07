@@ -17,7 +17,15 @@
 ## 安装
 
 ### 方式一：从Release下载（推荐）
-1. 下载最新的 `Meowser-vX.Y.Z.zip` 文件：[Release 页面](https://github.com/kary2999/mini_bar/releases)
+
+**使用 DMG 安装包**（标准 macOS 方式）
+1. 从 [Release 页面](https://github.com/kary2999/mini_bar/releases) 下载 `Meowser-vX.Y.Z.dmg`
+2. 双击 DMG 文件打开
+3. 将 `Meowser.app` 拖到 Applications 文件夹
+4. 打开 Applications，找到 Meowser 并双击启动
+
+**或使用 ZIP 压缩包**（备选方案）
+1. 下载 `Meowser-vX.Y.Z.zip` 文件
 2. 解压后找到 `打开.command` 文件，双击它
 3. 按照提示操作，应用会自动启动并出现在菜单栏
 
@@ -242,15 +250,16 @@ xattr -cr /Applications/Meowser.app
 
 ## CI/CD 自动化
 
-项目包含两套 GitHub Actions 工作流：
+项目包含两套 GitHub Actions 工作流，自动生成 **DMG 安装包** 和 **ZIP 压缩包**：
 
 ### 🟢 简单版 (build-simple.yml)
 - 触发条件：主分支 push 和 PR
 - 功能：
   - 单个 Python 版本测试（3.12）
   - 运行单元测试
-  - 打包 macOS 应用
-  - 生成构建产物
+  - 编译 macOS 应用
+  - **生成 DMG 和 ZIP 安装包**
+  - 上传构建产物（30分钟内可下载）
 - 用途：快速反馈，检查基本功能
 
 ### 🔵 完整版 (build-full.yml)
@@ -258,11 +267,19 @@ xattr -cr /Applications/Meowser.app
 - 功能：
   - 多 Python 版本测试（3.9, 3.11, 3.12）
   - 代码质量检查
-  - 完整打包和签名
-  - 自动生成 Release 页面
-  - 自动上传可分发文件
-  - 生成详细的更新日志
-- 用途：完整的发布流程，确保质量
+  - 完整打包、签名和校验
+  - **生成 DMG 和 ZIP 安装包**
+  - 自动创建 GitHub Release 页面
+  - **自动上传 DMG 和 ZIP** 到 Release（永久可下载）
+  - 生成详细的更新日志和安装说明
+- 用途：完整的发布流程，最终产物可供用户下载
+
+### 生成的安装包
+
+| 格式 | 大小 | 用途 | 安装方式 |
+|------|------|------|---------|
+| **DMG** | ~30MB | 推荐分发 | 双击打开 → 拖到 Applications |
+| **ZIP** | ~27MB | 备选方案 | 解压 → 双击 打开.command |
 
 ### 使用方法
 
