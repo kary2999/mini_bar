@@ -1,175 +1,162 @@
-# Meowser — Floating Browser for macOS
+# Meowser — macOS 浮动浏览器
 
-A lightweight, always-on-top browser for macOS. Perfect for keeping reference material, documentation, or communication tools visible while you work.
+一个轻量级的 macOS 菜单栏应用，让你可以在工作时随时查看网页内容。完美适合查看文档、参考资料、视频或即时通讯。
 
-## Features
+## 功能特性
 
-🖼️ **Floating Windows** — Multiple independent browser windows that stay on top  
-🎨 **Small/Big Modes** — Toggle between compact (200×150) and full-featured (1200×800) views  
-⌨️ **Global Hotkeys** — Show/hide, create windows, rearrange layout with keyboard shortcuts  
-📋 **Profiles** — Switch between separate workspace configurations (proxy, bookmarks, etc.)  
-🔀 **Auto-Layout** — Windows automatically arrange in tile or cascade patterns  
-🌐 **Proxy Support** — Direct, system, HTTP, or SOCKS5 proxy configuration  
-📌 **Menubar App** — Minimal footprint, fully controllable from the status bar
+🖼️ **浮动窗口** — 多个独立浮窗，始终保持在顶层  
+🎨 **大小窗切换** — 在小窗(200×150)和大窗(1200×800)之间自由切换  
+⌨️ **全局快捷键** — 一键显隐、新建窗口、整理布局  
+📋 **工作区管理** — 支持多个独立的工作区配置(代理、书签等)  
+🔀 **自动布局** — 窗口自动排列成网格或级联模式  
+🌐 **代理支持** — 支持直连、系统代理、HTTP、SOCKS5  
+📌 **菜单栏应用** — 占用空间极小，完全从菜单栏控制
 
-## Installation
+## 安装
 
-### From Release
-1. Download the latest `Meowser-vX.Y.Z.zip` from [Releases](https://github.com/kary2999/mini_bar/releases)
-2. Extract and double-click `打开.command` (Open)
-3. The app appears as a small dot (●) in the menu bar
+### 方式一：从Release下载（推荐）
+1. 下载最新的 `Meowser-vX.Y.Z.zip` 文件：[Release 页面](https://github.com/kary2999/mini_bar/releases)
+2. 解压后找到 `打开.command` 文件，双击它
+3. 按照提示操作，应用会自动启动并出现在菜单栏
 
-### From Source
+### 方式二：从源码编译
 ```bash
 git clone https://github.com/kary2999/mini_bar.git
 cd mini_bar
 
-# Build and package
+# 安装依赖
+pip install -r requirements.txt
+
+# 编译打包
 ./build.sh
 
-# Run the built app
+# 运行编译好的应用
 open dist/Meowser.app
 ```
 
-## Quick Start
+## 快速开始
 
-### First Launch
-1. **Extract & Open**: Double-click `打开.command` from the zip
-2. **Grant Permission**: Click "Open" when macOS shows security warning
-3. **Select Profile**: Choose a workspace (Work, Personal, etc.) from launcher
-4. **Done**: Small browser window appears at screen edge
+### 首次启动
 
-### Daily Usage
+1. **解压并打开** — 双击 zip 中的 `打开.command`
+2. **允许运行** — macOS 弹出安全警告时，点击"打开"
+3. **选择工作区** — 从启动器窗口选择一个工作区（工作、个人等）
+4. **完成** — 浮窗自动出现在屏幕右下角
+
+### 日常使用
 
 ```
 ┌─────────────────────────────────────────────┐
-│ Menu Bar                         [●] Meowser │  ← Click here to control
+│ 菜单栏                         [●] Meowser  │  ← 点这里控制
 └─────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────┐
-│ ⌘⌥B: Show/Hide                              │
-│ ⌘⌥R: Rearrange windows                      │
-│ ⌘⌥Q: Quit                                   │
+│ ⌘⌥B: 显示/隐藏所有窗口                       │
+│ ⌘⌥R: 整理窗口布局                           │
+│ ⌘⌥Q: 退出应用                               │
 │                                              │
-│ [New Window]  [Layout ⋮]  [Settings] [Exit] │  ← Popover menu
+│ [新建窗口] [布局⋮] [设置] [退出]             │ ← 弹出菜单
 └─────────────────────────────────────────────┘
 ```
 
-### Window Modes
+### 窗口模式
 
-**Small Window (200×150)** — Compact floating view
+**小窗模式 (200×150)** — 紧凑浮窗
 ```
 ┌──────────────┐
 │              │
-│ Scaled down  │  Double-click to expand
-│ web content  │
+│ 网页内容     │  双击可以展开
+│ (缩小显示)   │
 │              │
 └──────────────┘
 ```
 
-**Big Window (1200×800)** — Full-featured view
+**大窗模式 (1200×800)** — 完整功能窗口
 ```
 ┌────────────────────────────────────────────────────┐
-│ ◀  ▶  ⟲  https://example.com              ◐─────⊕  │  Address bar + controls
+│ ◀  ▶  ⟲  https://example.com              ◐─────⊕  │  地址栏 + 控制按钮
 ├────────────────────────────────────────────────────┤
 │                                                    │
-│                   Web Content                      │
-│                   (full size)                      │
+│                   网页内容                         │
+│                   (完整显示)                       │
 │                                                    │
 └────────────────────────────────────────────────────┘
 ```
 
-Click outside big window → auto-shrinks to small
+点击大窗外部 → 自动缩小回小窗
 
-### Hotkey Reference
+### 快捷键速查表
 
-| Hotkey | Action |
-|--------|--------|
-| `⌘⌥B` | Show/hide all floating windows (global, works anytime) |
-| `⌘⌥R` | Rearrange windows (tile/cascade based on layout setting) |
-| `⌘⌥Q` | Quit Meowser |
-| Double-click small window | Expand to big view |
-| Click outside big window | Collapse to small view |
+| 快捷键 | 功能 |
+|--------|------|
+| `⌘⌥B` | 显示/隐藏所有浮窗（全局有效，随时可用） |
+| `⌘⌥R` | 整理窗口（根据布局设置排列） |
+| `⌘⌥Q` | 退出应用 |
+| 双击小窗 | 展开成大窗 |
+| 点击大窗外部 | 折叠回小窗 |
 
-### Menu Features
+### 菜单栏菜单功能详解
 
-Click the **●** menu bar icon to access:
+点击菜单栏的 **●** 图标即可打开菜单，包含以下功能：
 
-- **Profile Status** — Shows current workspace name & window count
-- **New Window** — Create another floating browser window
-- **Quick Actions** — Show/hide, rearrange, go home
-- **Window Size** — Choose from 10 preset sizes (60×45 ~ 800×600)
-- **Layout** — Switch between "Tile" and "Cascade" arrangement
-  - **Edge**: Left/Right/Top/Bottom
-  - **Spacing**: Adjust gap between windows
-- **Quick Links** — Bookmarks from your browser (Chrome, Safari, etc.)
-- **Address Bar** — Type or paste URL directly
-- **Proxy Settings** — Configure per-profile proxy (direct/system/HTTP/SOCKS5)
-- **Settings** — Edit hotkeys, default URL, layout behavior
-- **Pin Window** — Keep a window on top always (useful during presentations)
+- **工作区状态** — 显示当前工作区名称和窗口数量
+- **新建窗口** — 创建一个新的浮动浏览器窗口
+- **快速操作** — 显示/隐藏、整理、回到主页
+- **窗口大小** — 从10个预设尺寸中选择（从60×45到800×600）
+- **布局设置** — 在"平铺"和"级联"模式间切换
+  - **方向**: 左/右/上/下
+  - **间距**: 调整窗口之间的距离
+- **快速链接** — 从你的浏览器书签（Chrome、Safari等）导入
+- **地址栏** — 直接输入或粘贴网址
+- **代理设置** — 为每个工作区配置不同的代理（直连/系统/HTTP/SOCKS5）
+- **高级设置** — 修改快捷键、默认网址、布局行为
+- **窗口置顶** — 让某个窗口始终在最顶层（演讲时很有用）
 
-## System Requirements
+## 使用场景
 
-- **macOS 11** (Big Sur) or later
+### 📺 一边看视频一边工作
+在 YouTube、Twitch 等视频网站看内容，同时专注于主要工作
+```
+[主编辑器]                       [浮窗]
+[代码/文档]                      [YouTube]
+                                 [200×150]
+```
+
+### 📋 随时查阅参考资料
+文档、API、代码示例始终可见
+```
+[IDE]                            [浮窗]
+[代码编辑器]          或         [MDN/文档]
+                                 [StackOverflow]
+```
+
+### 💬 保持通讯畅通
+同时显示 Slack、邮件、聊天等，多个浮窗并排
+```
+[主工作区]  [Slack] [邮件] [聊天]
+           [150×150 浮窗并排]
+```
+
+### 🎯 多工作区秒速切换
+瞬间切换不同的工作环境配置：
+- **工作**: VPN代理、公司书签、gmail.com
+- **个人**: 直连网络、个人书签
+- **研究**: 特定书签和布局
+
+通过菜单切换工作区 → 所有窗口自动使用新配置
+
+## 系统要求
+
+- **macOS 11** (Big Sur) 或更新版本
 - **Apple Silicon** (M1/M2/M3/M4/M5)
-- **Python 3.8+** (for development only)
+- **Python 3.8+** (仅开发时需要)
 
-## Development
+## 配置说明
 
-See [CLAUDE.md](CLAUDE.md) for detailed build instructions, architecture, and development guide.
+### 配置文件位置
+用户配置保存在 `~/.meowser/config.json`
 
-### Quick Commands
-```bash
-# Setup
-pip install -r requirements.txt
-
-# Run development
-python3 main.py
-
-# Test
-python3 test_self.py
-
-# Build for distribution
-./build.sh
-```
-
-## Use Cases
-
-### 📺 Watch While Working
-Keep YouTube, Twitch, or video content visible while coding
-```
-[Main Editor]                    [Small Browser]
-                                 [  YouTube  ]
-                                 [ 200×150   ]
-```
-
-### 📋 Reference Material
-Docstrings, APIs, documentation always accessible
-```
-[IDE]                            [Browser]
-[Code Editor]          or        [Docs]
-                                 [MDN/StackOverflow]
-```
-
-### 💬 Always-On Communication
-Keep Slack, Discord, or mail preview visible (tile multiple windows)
-```
-[Main Work Area]  [Slack] [Email] [Chat]
-                  [150×150]
-```
-
-### 🎯 Multi-Profile Workflow
-Switch between contexts instantly:
-- **Work**: VPN proxy, corporate bookmarks, gmail.com
-- **Personal**: Direct internet, personal bookmarks
-- **Research**: Specific bookmarks & layout setup
-
-Switch via menu → All windows refresh with new profile settings
-
-## Configuration
-
-User settings are stored in `~/.meowser/config.json`:
-
+### 配置示例
 ```json
 {
   "toggle_hotkey": {"modifiers": ["cmd", "alt"], "key": "B"},
@@ -184,36 +171,42 @@ User settings are stored in `~/.meowser/config.json`:
     "auto_reflow": true
   },
   "profile": {
-    "name": "Work",
+    "name": "工作",
     "mode": "work",
     "proxy": {"type": "direct"}
   }
 }
 ```
 
-Edit directly or use the **Settings** panel in the menu.
+可以直接编辑此文件，或使用菜单中的 **设置** 面板。
 
-### Proxy Configuration
+### 代理配置详解
 
-Each profile can have independent proxy settings:
+每个工作区可以有独立的代理设置：
 
+**直连（无代理）**
 ```json
-{
-  "type": "direct"           // No proxy
-}
+{"type": "direct"}
+```
 
-{
-  "type": "system"           // Use system proxy
-}
+**使用系统代理**
+```json
+{"type": "system"}
+```
 
+**HTTP 代理**
+```json
 {
   "type": "http",
   "host": "proxy.corp.com",
   "port": 8080,
-  "username": "user",
-  "password": "pass"
+  "username": "用户名",
+  "password": "密码"
 }
+```
 
+**SOCKS5 代理**
+```json
 {
   "type": "socks5",
   "host": "localhost",
@@ -221,43 +214,62 @@ Each profile can have independent proxy settings:
 }
 ```
 
-## Troubleshooting
+## 常见问题排查
 
-### "Meowser is damaged and can't be opened"
-This is a Gatekeeper warning for unsigned apps. Solution:
+### ❌ "Meowser 已损坏"警告
+这是 macOS 对未签名应用的警告。解决方案：
 ```bash
 xattr -cr /Applications/Meowser.app
 ```
-Or double-click `打开.command` from the zip (it does this automatically).
+或直接双击 zip 中的 `打开.command` 文件（会自动处理）。
 
-### Windows not appearing
-- Check menu bar for ● icon (may be hidden by other apps)
-- Try hotkey `⌘⌥B` to show windows
-- Restart app if needed: Quit via menu → `⌘⌥Q`
+### ❌ 浮窗没有出现
+- 检查菜单栏右上角是否有 ● 图标（可能被其他应用遮挡）
+- 尝试按快捷键 `⌘⌥B` 显示窗口
+- 如果还是不行，重启应用：通过菜单 Quit → 再次启动
 
-### Proxy not working
-- Verify proxy settings in menu → Proxy Settings
-- Test connectivity: Try loading a simple URL first
-- Check if proxy requires authentication (add username/password in config)
+### ❌ 代理设置不生效
+- 检查菜单中的代理设置是否配置正确
+- 先尝试访问一个简单的网址测试连接
+- 检查代理是否需要用户名和密码（在配置中添加）
 
-### App crashes
-- Check logs: `~/Library/Logs/Meowser.log` (if available)
-- Try resetting config: `rm ~/.meowser/config.json`
-- Report issue with error message on [GitHub Issues](https://github.com/kary2999/mini_bar/issues)
+### ❌ 应用崩溃
+- 查看错误信息
+- 尝试重置配置：`rm ~/.meowser/config.json`
+- 在 [GitHub Issues](https://github.com/kary2999/mini_bar/issues) 中报告问题，附上错误信息
 
-## Architecture
+## 开发
 
-Meowser uses a **Boss/Child window system**:
-- **Boss**: Represents a profile (Work, Personal, etc.)
-- **Children**: Individual floating windows managed by the Boss
-- **LayoutManager**: Automatically arranges windows in tile or cascade patterns
+详细的开发指南请查看 [CLAUDE.md](CLAUDE.md)。
 
-See [CLAUDE.md](CLAUDE.md) for full architecture details.
+### 快速命令
+```bash
+# 安装依赖
+pip install -r requirements.txt
 
-## License
+# 运行开发版本
+python3 main.py
 
-See LICENSE file (if applicable).
+# 运行测试
+python3 test_self.py
 
-## Support
+# 编译打包
+./build.sh
+```
 
-For issues, features, or questions, open an [issue on GitHub](https://github.com/kary2999/mini_bar/issues).
+## 架构概览
+
+Meowser 使用 **Boss/Child 窗口系统**：
+- **Boss**: 代表一个工作区配置（工作、个人等）
+- **Child**: 该工作区下的所有浮窗
+- **LayoutManager**: 自动排列这些浮窗
+
+完整架构说明请查看 [CLAUDE.md](CLAUDE.md)。
+
+## 许可证
+
+详见 LICENSE 文件。
+
+## 反馈与支持
+
+有任何问题或建议？在 [GitHub Issues](https://github.com/kary2999/mini_bar/issues) 中提交。
